@@ -1,3 +1,4 @@
+import { getDay } from 'date-fns';
 import * as SQLite from 'expo-sqlite/legacy';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
@@ -69,61 +70,6 @@ export function listAllWorkouts(): Promise<WorkoutDetails[]> {
         });
     });
 }
-// Helper function to fetch exercises and their sets for a specific workout
-// export function getExercisesForWorkout(workoutId: string): Promise<Exercise[]> {
-//     return new Promise((resolve, reject) => {
-//         // First, get all exercises for the specified workout
-//         executeSql(
-//             `SELECT * FROM exercises WHERE workout_id = ?;`,
-//             [workoutId],
-//             async (_, { rows }) => {
-//                 const exercises: Exercise[] = rows._array;
-
-//                 // Use Promise.all to fetch sets for each exercise
-//                 try {
-//                     listAllSets();
-//                     const exercisesWithSets = await Promise.all(
-//                         exercises.map(async (exercise) => {
-//                             // Fetch sets for the current exercise and attach them
-//                             const sets = await getSetsForExercise(exercise.id);
-
-//                             return {
-//                                 ...exercise,
-//                                 sets,
-//                             };
-//                         })
-//                     );
-
-//                     resolve(exercisesWithSets);
-//                 } catch (error) {
-//                     console.log('Error fetching sets for exercises:', error);
-//                     reject(error);
-//                 }
-//             },
-//             (_, error) => {
-//                 console.log('Error fetching exercises for workout:', error);
-//                 reject(error);
-//                 return !!error;
-//             }
-//         );
-//     });
-// }
-
-function listAllSets() {
-    database.transaction(tx => {
-        tx.executeSql(
-            `SELECT * FROM sets;`,
-            [],
-            (_, { rows }) => {
-                console.log('Setssss:', rows._array);
-            },
-            (_, error) => {
-                console.log('Error fetching sets:', error);
-                return !!error;
-            }
-        );
-    });
-}
 
 /**
  * Creates a new workout entry in the database.
@@ -132,16 +78,36 @@ function listAllSets() {
  * @param dayOfWeek - The day of the week the workout is scheduled for.
  * @returns A promise that resolves when the workout is successfully created or rejects with an error.
  */
-export async function createNewWorkout(workoutName: string, dayOfWeek: string) {
+export async function createNewWorkout(workoutName: string, dayOfWeek: string): Promise<WorkoutDetails> {
     const id = uuidv4();
-    executeSql(CreateWorkout, [id, workoutName, dayOfWeek],
-        (_, result) => {
-            console.log('Treino criado com sucesso', result);
-        },
-        (_, error) => {
-            console.log('Erro ao criar treino', error);
-            return !!error;
-        });
+    return new Promise((resolve, reject) => {
+        executeSql(CreateWorkout, [id, workoutName, dayOfWeek],
+            (_, result) => {
+                console.log('Treino criado com sucesso', result);
+                const newWorkout = new Promise<WorkoutDetails>((resolve, reject) => {
+                    executeSql(
+                        `SELECT * FROM workouts WHERE id = ?;`,
+                        [id],
+                        (_, { rows }) => {
+                            const workout = rows._array[0] as WorkoutDetails;
+                            resolve(workout);
+                        },
+                        (_, error) => {
+                            console.log('Erro ao buscar treino', error);
+                            reject(error);
+                            return !!error;
+                        }
+                    );
+                });
+
+                resolve(newWorkout);
+            },
+            (_, error) => {
+                console.log('Erro ao criar treino', error);
+                reject(error);
+                return !!error;
+            });
+    });
 }
 
 export function listExercises() {
@@ -356,6 +322,48 @@ function getSetsForExercise(exerciseId: string): Promise<ExerciseSet[]> {
             },
             (_, error) => {
                 console.log('Error fetching sets for exercise:', error);
+                reject(error);
+                return !!error;
+            }
+        );
+    });
+}
+
+export function getWorkoutOfTheDay(): Promise<WorkoutDetails | null> {
+    return new Promise(async (resolve, reject) => {
+        const allWorkouts = await listAllWorkouts()
+
+        if (allWorkouts.length === 0) {
+            reject('No workout detected')
+            return;
+        }
+
+        const today = getDay(new Date)
+
+        const output = allWorkouts.find((elm) => elm.day_of_week === String(today))
+
+        if (!output) {
+            reject('No workout detected')
+            return;
+        }
+
+        const detailedWorkout = await getWorkoutDetails(output.id)
+
+        resolve(detailedWorkout)
+    })
+}
+
+export function deleteWorkout(workoutId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        executeSql(
+            `DELETE FROM workouts WHERE id = ?;`,
+            [workoutId],
+            (_, result) => {
+                console.log('Workout deleted successfully', result);
+                resolve();
+            },
+            (_, error) => {
+                console.log('Error deleting workout', error);
                 reject(error);
                 return !!error;
             }
