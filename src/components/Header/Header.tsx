@@ -15,9 +15,7 @@ export function Header({ navigate, showAddButton }: HeaderProps) {
     return (
         <View style={styles.header}>
             <View style={styles.headerContent}>
-                {canGoBack &&
-                    <Icon name='navigate-before' color='#34495E' onPress={navigate.goBack} />
-                }
+                <Icon name={canGoBack ? 'navigate-before' : ''} color='#34495E' onPress={navigate.goBack} />
                 <Text style={styles.headerText}>Workout Tracker</Text>
                 <Icon
                     name={showAddButton ? 'add-circle' : ''}

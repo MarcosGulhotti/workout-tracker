@@ -39,7 +39,7 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
 
     return (
         <PageWrapper>
-            <Header navigate={navigation} />
+            <Header navigate={navigation} showAddButton />
             <Separator text="Workouts" />
 
             <ScrollView>
