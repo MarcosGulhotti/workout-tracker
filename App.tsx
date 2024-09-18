@@ -1,20 +1,22 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { View } from 'react-native';
+import { Router } from './src/screens';
+import { setUpDatabase } from './src/services/api/workoutClient';
 
+/**
+ * The main entry point of the application.
+ * 
+ * @returns {JSX.Element} The root view of the application.
+ */
 export default function App() {
+
+  useEffect(() => {
+    setUpDatabase();
+  }, [])
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
+    <View style={{ flex: 1 }}>
+      <Router />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
