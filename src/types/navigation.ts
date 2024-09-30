@@ -6,7 +6,9 @@ export type RootStackParamList = {
     Home: undefined; // No params expected
     CreateWorkout: undefined  // No params expected
     CreateExercise: { selectedWorkout: WorkoutDetails };
-    ListAllWorkouts: undefined
+    ListAllWorkouts: undefined;
+    WorkoutDetails: { selectedWorkout: WorkoutDetails };
+    WorkingOut: { selectedWorkout: WorkoutDetails }
 };
 
 type KeyOfRootStackParamList = keyof RootStackParamList

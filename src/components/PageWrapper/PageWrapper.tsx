@@ -24,8 +24,6 @@ export function PageWrapper({ children, barStyle = 'default' }: PageWrapperProps
 }
 
 const styles = StyleSheet.create({
-    outsideWrapper: {
-    },
     container: {
         flex: 1,
     },

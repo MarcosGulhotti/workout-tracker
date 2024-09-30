@@ -6,6 +6,8 @@ import { CreateExercises } from "./CreateExercises/CreateExercises";
 import { CreateWorkout } from "./CreateWorkout/CreateWorkout";
 import { Home } from "./Home/Home";
 import { ListAllWorkouts } from "./ListAllWorkouts/ListAllWorkouts";
+import { WorkingOut } from "./WorkingOut/WorkingOut";
+import { WorkoutDetailsPage } from "./WorkoutDetails/WorkoutDetails";
 
 enableScreens();
 
@@ -25,6 +27,8 @@ export function Router() {
                 <Stack.Screen name="CreateWorkout" component={CreateWorkout} />
                 <Stack.Screen name="CreateExercise" component={CreateExercises} />
                 <Stack.Screen name="ListAllWorkouts" component={ListAllWorkouts} />
+                <Stack.Screen name="WorkoutDetails" component={WorkoutDetailsPage} />
+                <Stack.Screen name="WorkingOut" component={WorkingOut} />
             </Stack.Navigator>
         </NavigationContainer>
     )

@@ -31,6 +31,7 @@ export function Home({ navigation }: NavigationPageProps) {
                         <StyledButton
                             text={`Start Workout: ${workoutOfTheDay.workout_name}`}
                             customStyles={{ marginHorizontal: 10, height: 40 }}
+                            onPress={() => navigation.navigate('WorkingOut', { selectedWorkout: workoutOfTheDay })}
                         />
                     </View>
                 }

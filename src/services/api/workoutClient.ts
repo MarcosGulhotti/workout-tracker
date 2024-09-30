@@ -3,6 +3,7 @@ import * as SQLite from 'expo-sqlite/legacy';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { useDataBase } from '../../hooks/useDatabase';
+import { SavedWeights } from '../../screens/WorkingOut/WorkingOut';
 import { CreateCardioTable, CreateCompletedExercisesTable, CreateCompletedSetsTable, CreateCompletedWorkoutsTable, CreateExercisesTable, CreateSetsTable, CreateWorkout, CreateWorkoutTable, DropAllTables } from '../sql';
 import { AddExerciseToWorkout } from '../sql/Update/AddExerciseToWorkout';
 import { Exercise, ExerciseSet, WorkoutDetails } from './types';
@@ -176,6 +177,11 @@ export function hardResetProject() {
         console.log('Exercises table dropped.');
     });
 
+    // Drop the table
+    executeSql(`DROP TABLE IF EXISTS completed_workouts;`, [], () => {
+        console.log('Exercises table dropped.');
+    });
+
     // Re-enable foreign key constraints
     executeSql(`PRAGMA foreign_keys = ON;`, [], () => {
         console.log('Foreign keys enabled.');
@@ -226,6 +232,18 @@ export function hardResetProject() {
     });
     executeSql(
         `PRAGMA table_info(exercises);`,
+        [],
+        (_, { rows }) => {
+            console.log('Updated table schema:', rows._array);
+        },
+        (_, error) => {
+            console.log('Error fetching table schema', error);
+            return !!error;
+        }
+    );
+
+    executeSql(
+        `PRAGMA table_info(completed_workouts);`,
         [],
         (_, { rows }) => {
             console.log('Updated table schema:', rows._array);
@@ -370,3 +388,172 @@ export function deleteWorkout(workoutId: string): Promise<void> {
         );
     });
 }
+
+// Função para salvar o treino completo
+export const saveCompletedWorkout = async (
+    workout_id: string,
+    workoutName: string,
+    date: string,
+    savedWeights: SavedWeights[]
+) => {
+    return new Promise<void>((resolve, reject) => {
+        // Inserir o treino completo na tabela 'completed_workouts'
+        executeSql(
+            'INSERT INTO completed_workouts (workout_id, workout_name, date) VALUES (?, ?, ?);',
+            [workout_id, workoutName, date],
+            (_, result) => {
+                console.log('INSERT INTO completed_workouts')
+                const completedWorkoutId = result.insertId;
+                if (!completedWorkoutId) return;
+
+                // Iterar pelos exercícios e salvar no banco de dados
+                savedWeights.forEach(exercise => {
+                    executeSql(
+                        'INSERT INTO completed_exercises (completed_workout_id, exercise_name) VALUES (?, ?);',
+                        [workout_id, exercise.exerciseName], // Use o nome do exercício ou uma referência que você possui
+                        (_, result) => {
+
+                            console.log('INSERT INTO completed_exercises')
+                            const completedExerciseId = result.insertId;
+
+                            if (!completedExerciseId) return;
+
+                            // Iterar pelas séries e salvar no banco de dados
+                            exercise.sets.forEach(set => {
+                                executeSql(
+                                    'INSERT INTO completed_sets (completed_exercise_id, set_number, repetitions, weight) VALUES (?, ?, ?, ?);',
+                                    [completedExerciseId, set.setNumber, set.repetitions, set.weight],
+                                    () => console.log(`Set ${set.setNumber} do exercício ${exercise.exerciseId} salvo.`),
+                                    (_, error) => {
+                                        console.error('Erro ao salvar a série:', error);
+                                        reject(error);
+                                        return !!error
+                                    }
+                                );
+                            });
+                        },
+                        (_, error) => {
+                            console.error('Erro ao salvar o exercício:', error);
+                            reject(error);
+                            return !!error
+                        }
+                    );
+                });
+
+                resolve();
+            },
+            (_, error) => {
+                console.error('Erro ao salvar treino completo:', error);
+                reject(error);
+                return !!error
+            }
+        );
+    });
+};
+
+// Tipo para representar cada série
+type CompletedSet = {
+    setNumber: string;
+    repetitions: string;
+    weight: string;
+};
+
+// Tipo para representar cada exercício
+type CompletedExercise = {
+    exerciseId: string;
+    exerciseName: string;
+    sets: CompletedSet[];
+};
+
+// Tipo para representar o treino completo
+export type CompletedWorkoutDetails = {
+    workoutName: string;
+    date: string;
+    exercises: CompletedExercise[];
+};
+
+// Função para buscar os detalhes de um treino concluído específico
+export const getCompletedWorkoutDetails = async (completedWorkoutId: string) => {
+    return new Promise<CompletedWorkoutDetails>((resolve, reject) => {
+        // Buscar informações gerais do treino concluído
+        executeSql(
+            `SELECT workout_name, date FROM completed_workouts WHERE workout_id = ?;`,
+            [completedWorkoutId],
+            (_, { rows }) => {
+                const workout = rows._array[0];
+
+                if (!workout) {
+                    reject('Treino não encontrado');
+                    return;
+                }
+
+                // Buscar os exercícios relacionados ao treino concluído
+                executeSql(
+                    `SELECT id AS exerciseId, exercise_name FROM completed_exercises WHERE completed_workout_id = ?;`,
+                    [completedWorkoutId],
+                    (_, { rows }) => {
+                        const exercises: CompletedExercise[] = rows._array.map(exercise => ({
+                            exerciseId: exercise.exerciseId.toString(),
+                            exerciseName: exercise.exercise_name,
+                            sets: [],
+                        }));
+
+                        // Para cada exercício, buscar as séries realizadas
+                        const exerciseIds = exercises.map(e => e.exerciseId);
+                        if (exerciseIds.length === 0) {
+                            resolve({
+                                workoutName: workout.workout_name,
+                                date: workout.date,
+                                exercises: [],
+                            });
+                            return;
+                        }
+
+                        // Busca as séries relacionadas aos exercícios do treino concluído
+                        executeSql(
+                            `SELECT completed_exercise_id, set_number, repetitions, weight
+                   FROM completed_sets
+                   WHERE completed_exercise_id IN (${exerciseIds.join(',')})
+                   ORDER BY set_number ASC;`,
+                            [],
+                            (_, { rows }) => {
+                                rows._array.forEach(set => {
+                                    const exercise = exercises.find(e => e.exerciseId === set.completed_exercise_id.toString());
+                                    if (exercise) {
+                                        exercise.sets.push({
+                                            setNumber: set.set_number.toString(),
+                                            repetitions: set.repetitions.toString(),
+                                            weight: set.weight.toString(),
+                                        });
+                                    }
+                                });
+
+                                // Resolver a promise com os dados completos do treino concluído
+                                resolve({
+                                    workoutName: workout.workout_name,
+                                    date: workout.date,
+                                    exercises,
+                                });
+                            },
+                            (_, error) => {
+                                console.error('Erro ao buscar séries:', error);
+                                reject(error);
+                                return !!error
+                            }
+                        );
+                    },
+                    (_, error) => {
+                        console.error('Erro ao buscar exercícios:', error);
+                        reject(error);
+                        return !!error
+                    }
+                );
+            },
+            (_, error) => {
+                console.error('Erro ao buscar treino concluído:', error);
+                reject(error);
+                return !!error
+            }
+        );
+    });
+};
