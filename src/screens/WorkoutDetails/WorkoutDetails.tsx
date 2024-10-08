@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Button, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { WorkoutDetails } from "../../services/api/types";
-import { CompletedWorkoutDetails, getCompletedWorkoutDetails, getWorkoutDetails } from "../../services/api/workoutClient";
+import { CompletedWorkoutDetails, deleteWorkout, getCompletedWorkoutDetails, getWorkoutDetails } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
@@ -24,6 +24,12 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
         setCompletedWorkoutDetails(test)
 
         setWorkoutDetails(output)
+    }
+
+    const handleDeleteWorkout = async () => {
+        if (selectedWorkout && selectedWorkout.id) {
+            await deleteWorkout(selectedWorkout.id)
+        }
     }
 
     useEffect(() => {
@@ -47,6 +53,8 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
                         </View>
                     </View>
                 ))}
+
+                <Button title="Delete" onPress={handleDeleteWorkout} />
 
                 <View>
                     <Separator text="Last Completed Workout" />

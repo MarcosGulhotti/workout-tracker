@@ -173,6 +173,11 @@ export function hardResetProject() {
         console.log('Exercises table dropped.');
     });
 
+    // Drop the table
+    executeSql(`DROP TABLE IF EXISTS workouts;`, [], () => {
+        console.log('Exercises table dropped.');
+    });
+
     executeSql(`DROP TABLE IF EXISTS sets;`, [], () => {
         console.log('Exercises table dropped.');
     });
@@ -207,6 +212,22 @@ export function hardResetProject() {
             });
         });
 
+        // Drop the table
+        executeSql(`DROP TABLE IF EXISTS workouts;`, [], () => {
+            console.log('Exercises table dropped.');
+
+            // Create the table with the correct schema
+            executeSql(`
+                CREATE TABLE IF NOT EXISTS workouts (
+                    id TEXT PRIMARY KEY,
+                    workout_name TEXT NOT NULL,
+                    day_of_week TEXT NOT NULL
+                );
+            `, [], () => {
+                console.log('Workouts table created with the correct schema.');
+            });
+        });
+
         // Drop sets table
         executeSql(`DROP TABLE IF EXISTS sets;`, [], () => {
             console.log('Sets table dropped.');
@@ -232,6 +253,18 @@ export function hardResetProject() {
     });
     executeSql(
         `PRAGMA table_info(exercises);`,
+        [],
+        (_, { rows }) => {
+            console.log('Updated table schema:', rows._array);
+        },
+        (_, error) => {
+            console.log('Error fetching table schema', error);
+            return !!error;
+        }
+    );
+
+    executeSql(
+        `PRAGMA table_info(workouts);`,
         [],
         (_, { rows }) => {
             console.log('Updated table schema:', rows._array);
@@ -350,6 +383,7 @@ function getSetsForExercise(exerciseId: string): Promise<ExerciseSet[]> {
 export function getWorkoutOfTheDay(): Promise<WorkoutDetails | null> {
     return new Promise(async (resolve, reject) => {
         const allWorkouts = await listAllWorkouts()
+        console.log(allWorkouts)
 
         if (allWorkouts.length === 0) {
             reject('No workout detected')
@@ -474,7 +508,7 @@ export type CompletedWorkoutDetails = {
 
 // Função para buscar os detalhes de um treino concluído específico
 export const getCompletedWorkoutDetails = async (completedWorkoutId: string) => {
-    return new Promise<CompletedWorkoutDetails>((resolve, reject) => {
+    return new Promise<CompletedWorkoutDetails | null>((resolve, reject) => {
         // Buscar informações gerais do treino concluído
         executeSql(
             `SELECT workout_name, date FROM completed_workouts WHERE workout_id = ?;`,
@@ -483,7 +517,8 @@ export const getCompletedWorkoutDetails = async (completedWorkoutId: string) => 
                 const workout = rows._array[0];
 
                 if (!workout) {
-                    reject('Treino não encontrado');
+                    console.log('Treino não encontrado');
+                    resolve(null);
                     return;
                 }
 

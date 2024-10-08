@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Header } from "../../components/Header/Header";
+import { Input } from "../../components/Input/Input";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
-import { SetsInput } from "../../components/SetsInput/SetsInput";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
 import { Exercise } from "../../services/api/types";
-import { saveCompletedWorkout } from "../../services/api/workoutClient";
+import { getCompletedWorkoutDetails, saveCompletedWorkout } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export type SavedWeights = {
@@ -34,12 +34,17 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
 
     const [weights, setWeights] = useState<string[]>([])
 
+    /**
+     * Handles the transition to the next exercise in the selected workout.
+     *
+     * @returns {void}
+     */
     const handleNextExercise = () => {
         if (!selectedWorkout.exercises) return;
 
         const nextExercise = selectedWorkout.exercises.findIndex((elm) => elm.id === currentExercise.id)
 
-        const savedSerie = {
+        const savedSet = {
             exerciseId: currentExercise.id,
             exerciseName: currentExercise.exercise_name,
             sets: currentExercise.sets.map((set) => ({
@@ -50,13 +55,13 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
         } as SavedWeights
 
         if (!selectedWorkout.exercises[nextExercise + 1]) {
-            setSavedWeigths([...savedWeigths, savedSerie ])
+            setSavedWeigths([...savedWeigths, savedSet])
             setWeights([])
             setCurrentExercise(selectedWorkout.exercises[0])
             return;
         }
 
-        setSavedWeigths([...savedWeigths, savedSerie ])
+        setSavedWeigths([...savedWeigths, savedSet])
         setCurrentExercise(selectedWorkout.exercises[nextExercise + 1])
         setWeights([])
     }
@@ -64,36 +69,88 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
     const handleSaveWorkout = () => {
         saveCompletedWorkout(selectedWorkout.id, selectedWorkout.workout_name, new Date().toLocaleString(), savedWeigths)
     }
-    
-    console.log(savedWeigths)
+
+    /**
+     * Retrieves the saved weight for a specific set of the current exercise.
+     *
+     * @param {number} index - The index of the set for which to retrieve the weight.
+     * @returns {string} - The weight for the specified set. If no saved weight is found, returns the default weight.
+     */
+    const getSavedWeights = async (index: number): Promise<string> => { //! TODO Check this function
+        const completedWorkout = await getCompletedWorkoutDetails(selectedWorkout.id)
+
+        const arrayToMap = completedWorkout?.exercises ?? savedWeigths
+
+        const savedWeight = arrayToMap.find((elm) => elm.exerciseId === currentExercise.id)
+
+        if (savedWeight) {
+            return savedWeight.sets[index].weight
+        }
+
+        return weights[index]
+    }
 
     return (
         <PageWrapper>
             <Header navigate={navigation} />
             <Separator text={selectedWorkout?.workout_name ?? ''} />
 
-            <ScrollView style={styles.container}>
-                <Text style={styles.title}>Exercise: {currentExercise.exercise_name}</Text>
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}
+            >
+                <ScrollView style={styles.container}>
+                    <Text style={styles.title}>Exercise: {currentExercise.exercise_name}</Text>
 
-                <View>
-                    {currentExercise.sets.map((set, index) => (
-                        <Text key={index}>
-                            Set {set.set_number}: {set.repetitions}
-                        </Text>
-                    ))}
+                    <View style={styles.repInputContainer}>
+                        {currentExercise.sets.map((set, index) => (
+                            <View style={styles.inputContainer} key={index}>
+                                <View>
+                                    <Text key={index}>
+                                        Set {set.set_number}:
+                                    </Text>
+                                </View>
+                                <View style={styles.setsContainer}>
+                                    <View style={styles.repsContainer}>
+                                        <Text>Repetitions - </Text>
+                                        <TextInput // TODO Add last workout reps
+                                            style={styles.repInput}
+                                            placeholder={`${set.repetitions}`}
+                                            value={set.repetitions.toString()}
+                                        />
+                                    </View>
+                                    <View style={styles.repsContainer}>
+                                        <Text>Weight - </Text>
+                                        <View style={styles.centeredInput}>
+                                            <Input //TODO Add last workout weight
+                                                style={styles.repInput}
+                                                keyboardType="number-pad"
+                                                onChangeText={text => {
+                                                    const newReps = [...weights];
+                                                    newReps[index] = text;
+                                                    setWeights(newReps);
+                                                }}
+                                                getValue={() => getSavedWeights(index)}
+                                                placeholder={set.weight}
+                                            />
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </ScrollView>
+
+                <View style={styles.buttonsContainer}>
+                    <StyledButton customStyles={{ height: 45, margin: 10 }} text="Next" onPress={handleNextExercise} />
+
+                    {currentExercise.id === selectedWorkout.exercises[selectedWorkout.exercises.length - 1].id && (
+                        <StyledButton customStyles={{ height: 45, margin: 10 }} text="SAVE" onPress={handleSaveWorkout} />
+                    )}
                 </View>
 
-                <SetsInput
-                    reps={weights}
-                    setNewReps={setWeights}
-                    sets={currentExercise.sets.length}
-                />
-
-                <StyledButton customStyles={{ height: 45, margin: 10 }} text="Next" onPress={handleNextExercise} />
-
-                <StyledButton customStyles={{ height: 45, margin: 10 }} text="SAVE" onPress={handleSaveWorkout} />
-
-            </ScrollView>
+            </KeyboardAvoidingView>
         </PageWrapper>
     )
 }
@@ -106,5 +163,42 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         marginBottom: 10
+    },
+    repInputContainer: {
+        flexDirection: 'column',
+        justifyContent: 'center',
+    },
+    inputContainer: {
+        padding: 10,
+    },
+    repInput: {
+        height: 40,
+        borderColor: 'gray',
+        borderWidth: 1,
+        width: 60,
+        borderRadius: 5,
+        padding: 5,
+    },
+    repsContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 10
+    },
+    setsContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    buttonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+    centeredInput: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
     }
 })
