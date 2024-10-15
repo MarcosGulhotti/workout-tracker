@@ -5,8 +5,9 @@ import { Input } from "../../components/Input/Input";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
+import { saveCompletedWorkout } from "../../services/api/hooks/ActiveWorkout/ActiveWorkout";
 import { Exercise } from "../../services/api/types";
-import { getCompletedWorkoutDetails, saveCompletedWorkout } from "../../services/api/workoutClient";
+import { getCompletedWorkoutDetails } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export type SavedWeights = {
@@ -30,7 +31,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
 
     const [currentExercise, setCurrentExercise] = useState<Exercise>(selectedWorkout.exercises[0])
 
-    const [savedWeigths, setSavedWeigths] = useState<SavedWeights[]>([])
+    const [savedWeights, setSavedWeights] = useState<SavedWeights[]>([])
 
     const [weights, setWeights] = useState<string[]>([])
 
@@ -55,19 +56,19 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
         } as SavedWeights
 
         if (!selectedWorkout.exercises[nextExercise + 1]) {
-            setSavedWeigths([...savedWeigths, savedSet])
+            setSavedWeights([...savedWeights, savedSet])
             setWeights([])
             setCurrentExercise(selectedWorkout.exercises[0])
             return;
         }
 
-        setSavedWeigths([...savedWeigths, savedSet])
+        setSavedWeights([...savedWeights, savedSet])
         setCurrentExercise(selectedWorkout.exercises[nextExercise + 1])
         setWeights([])
     }
 
     const handleSaveWorkout = () => {
-        saveCompletedWorkout(selectedWorkout.id, selectedWorkout.workout_name, new Date().toLocaleString(), savedWeigths)
+        saveCompletedWorkout({workout_id: selectedWorkout.id, workoutName: selectedWorkout.workout_name, date: new Date().toLocaleString(), savedWeights })
     }
 
     /**
@@ -79,7 +80,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
     const getSavedWeights = async (index: number): Promise<string> => { //! TODO Check this function
         const completedWorkout = await getCompletedWorkoutDetails(selectedWorkout.id)
 
-        const arrayToMap = completedWorkout?.exercises ?? savedWeigths
+        const arrayToMap = completedWorkout?.exercises ?? savedWeights
 
         const savedWeight = arrayToMap.find((elm) => elm.exerciseId === currentExercise.id)
 

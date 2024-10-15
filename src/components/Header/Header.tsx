@@ -5,10 +5,12 @@ import { ScreenNavigationProp } from "../../types/navigation";
 
 type HeaderProps = {
     navigate: ScreenNavigationProp
-    showAddButton?: boolean
+    actionButtonIcon?: string
+    handleClickActionButton?: () => void
+    actionButtonColor?: string
 }
 
-export function Header({ navigate, showAddButton }: HeaderProps) {
+export function Header({ navigate, actionButtonIcon, handleClickActionButton, actionButtonColor }: HeaderProps) {
 
     const canGoBack = useMemo(() => navigate.canGoBack(), [navigate]);
 
@@ -17,11 +19,15 @@ export function Header({ navigate, showAddButton }: HeaderProps) {
             <View style={styles.headerContent}>
                 <Icon name={canGoBack ? 'navigate-before' : ''} color='#34495E' onPress={navigate.goBack} />
                 <Text style={styles.headerText}>Workout Tracker</Text>
-                <Icon
-                    name={showAddButton ? 'add-circle' : ''}
-                    color='#34495E'
-                    onPress={() => navigate.navigate('CreateWorkout')}
-                />
+                <View style={{ width: 24 }}>
+                    {actionButtonIcon &&
+                        <Icon
+                            name={actionButtonIcon}
+                            color={actionButtonColor ?? '#34495E'}
+                            onPress={handleClickActionButton}
+                        />
+                    }
+                </View>
             </View>
         </View>
     )

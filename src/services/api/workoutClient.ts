@@ -2,7 +2,6 @@ import { getDay } from 'date-fns';
 import * as SQLite from 'expo-sqlite/legacy';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import { SavedWeights } from '../../screens/WorkingOut/WorkingOut';
 import { CreateCardioTable, CreateCompletedExercisesTable, CreateCompletedSetsTable, CreateCompletedWorkoutsTable, CreateExercisesTable, CreateSetsTable, CreateWorkout, CreateWorkoutTable, DropAllTables } from '../sql';
 import { AddExerciseToWorkout } from '../sql/Update/AddExerciseToWorkout';
 import { useDataBase } from './hooks/useDatabase';
@@ -404,68 +403,6 @@ export function getWorkoutOfTheDay(): Promise<WorkoutDetails | null> {
         resolve(detailedWorkout)
     })
 }
-
-// Função para salvar o treino completo
-export const saveCompletedWorkout = async (
-    workout_id: string,
-    workoutName: string,
-    date: string,
-    savedWeights: SavedWeights[]
-) => {
-    return new Promise<void>((resolve, reject) => {
-        // Inserir o treino completo na tabela 'completed_workouts'
-        executeSql(
-            'INSERT INTO completed_workouts (workout_id, workout_name, date) VALUES (?, ?, ?);',
-            [workout_id, workoutName, date],
-            (_, result) => {
-                console.log('INSERT INTO completed_workouts')
-                const completedWorkoutId = result.insertId;
-                if (!completedWorkoutId) return;
-
-                // Iterar pelos exercícios e salvar no banco de dados
-                savedWeights.forEach(exercise => {
-                    executeSql(
-                        'INSERT INTO completed_exercises (completed_workout_id, exercise_name) VALUES (?, ?);',
-                        [workout_id, exercise.exerciseName], // Use o nome do exercício ou uma referência que você possui
-                        (_, result) => {
-
-                            console.log('INSERT INTO completed_exercises')
-                            const completedExerciseId = result.insertId;
-
-                            if (!completedExerciseId) return;
-
-                            // Iterar pelas séries e salvar no banco de dados
-                            exercise.sets.forEach(set => {
-                                executeSql(
-                                    'INSERT INTO completed_sets (completed_exercise_id, set_number, repetitions, weight) VALUES (?, ?, ?, ?);',
-                                    [completedExerciseId, set.setNumber, set.repetitions, set.weight],
-                                    () => console.log(`Set ${set.setNumber} do exercício ${exercise.exerciseId} salvo.`),
-                                    (_, error) => {
-                                        console.error('Erro ao salvar a série:', error);
-                                        reject(error);
-                                        return !!error
-                                    }
-                                );
-                            });
-                        },
-                        (_, error) => {
-                            console.error('Erro ao salvar o exercício:', error);
-                            reject(error);
-                            return !!error
-                        }
-                    );
-                });
-
-                resolve();
-            },
-            (_, error) => {
-                console.error('Erro ao salvar treino completo:', error);
-                reject(error);
-                return !!error
-            }
-        );
-    });
-};
 
 // Tipo para representar cada série
 type CompletedSet = {

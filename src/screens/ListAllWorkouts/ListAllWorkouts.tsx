@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
 import { Header } from "../../components/Header/Header";
@@ -17,13 +18,20 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
         setWorkouts(workouts);
     }
 
+    useFocusEffect(
+        useCallback(() => {
+            console.log('useFocusEffect')
+            handleListAllWorkouts();
+        }, [])
+    );
+
     useEffect(() => {
         handleListAllWorkouts()
     }, [])
 
     return (
         <PageWrapper>
-            <Header navigate={navigation} showAddButton />
+            <Header navigate={navigation} actionButtonIcon="add-circle" handleClickActionButton={() => navigation.navigate('CreateWorkout')} />
             <Separator text="Workouts" />
 
             <ScrollView style={styles.container}>

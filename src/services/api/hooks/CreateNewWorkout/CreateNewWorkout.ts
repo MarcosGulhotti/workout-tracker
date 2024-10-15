@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { useDataBase } from "../../../hooks/useDatabase";
-import { AddExerciseToWorkout, CreateWorkout } from "../../sql";
-import { ExerciseSet, WorkoutDetails } from "../types";
+import { AddExerciseToWorkout, CreateWorkout } from '../../../sql';
+import { ExerciseSet, WorkoutDetails } from '../../types';
+import { useDataBase } from '../useDatabase';
 
 const { executeSql } = useDataBase();
 
