@@ -3,8 +3,9 @@ import { Button, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
+import { deleteWorkout } from "../../services/api/hooks/DeleteWorkout/DeleteWorkout";
 import { WorkoutDetails } from "../../services/api/types";
-import { CompletedWorkoutDetails, deleteWorkout, getCompletedWorkoutDetails, getWorkoutDetails } from "../../services/api/workoutClient";
+import { CompletedWorkoutDetails, getCompletedWorkoutDetails, getWorkoutDetails } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {

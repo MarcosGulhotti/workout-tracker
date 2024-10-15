@@ -2,10 +2,10 @@ import { getDay } from 'date-fns';
 import * as SQLite from 'expo-sqlite/legacy';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import { useDataBase } from '../../hooks/useDatabase';
 import { SavedWeights } from '../../screens/WorkingOut/WorkingOut';
 import { CreateCardioTable, CreateCompletedExercisesTable, CreateCompletedSetsTable, CreateCompletedWorkoutsTable, CreateExercisesTable, CreateSetsTable, CreateWorkout, CreateWorkoutTable, DropAllTables } from '../sql';
 import { AddExerciseToWorkout } from '../sql/Update/AddExerciseToWorkout';
+import { useDataBase } from './hooks/useDatabase';
 import { Exercise, ExerciseSet, WorkoutDetails } from './types';
 
 const database = SQLite.openDatabase('workout_database');
@@ -403,24 +403,6 @@ export function getWorkoutOfTheDay(): Promise<WorkoutDetails | null> {
 
         resolve(detailedWorkout)
     })
-}
-
-export function deleteWorkout(workoutId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-        executeSql(
-            `DELETE FROM workouts WHERE id = ?;`,
-            [workoutId],
-            (_, result) => {
-                console.log('Workout deleted successfully', result);
-                resolve();
-            },
-            (_, error) => {
-                console.log('Error deleting workout', error);
-                reject(error);
-                return !!error;
-            }
-        );
-    });
 }
 
 // Função para salvar o treino completo

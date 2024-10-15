@@ -5,31 +5,16 @@ import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { WorkoutDetails } from "../../services/api/types";
-import { getWorkoutDetails, listAllWorkouts } from "../../services/api/workoutClient";
+import { listAllWorkouts } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
     const [workouts, setWorkouts] = useState<WorkoutDetails[]>([])
 
-    const [detailedWorkout, setDetailedWorkout] = useState<WorkoutDetails | null>(null);
-
-    // State to manage which accordion is expanded
-    const [expanded, setExpanded] = useState<number | null>(null);
-
     const handleListAllWorkouts = async () => {
         const workouts = await listAllWorkouts();
 
         setWorkouts(workouts);
-    }
-
-    const handleShowWorkoutDetails = async (id: string) => {
-        if (!id) {
-            return;
-        }
-
-        const output = await getWorkoutDetails(id);
-
-        setDetailedWorkout(output ?? null)
     }
 
     useEffect(() => {
