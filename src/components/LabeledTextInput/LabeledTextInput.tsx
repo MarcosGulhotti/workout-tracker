@@ -35,6 +35,7 @@ export function LabeledTextInput({
         keyboardType={type}
         onSubmitEditing={onSubmitEditing}
         onEndEditing={onSubmitEditing}
+        getValue={() => Promise.resolve(value)}
       />
     </View>
   );

@@ -20,7 +20,6 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
 
     useFocusEffect(
         useCallback(() => {
-            console.log('useFocusEffect')
             handleListAllWorkouts();
         }, [])
     );
@@ -39,6 +38,7 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
                     <TouchableOpacity
                         style={styles.createdExercisesContainer}
                         onPress={() => navigation.navigate('WorkoutDetails', { selectedWorkout: workout })}
+                        key={index}
                     >
                         <Text style={styles.texts}>{workout.workout_name}</Text>
                         <Icon name="chevron-right" color='black' />

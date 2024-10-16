@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import DayPicker from "../../components/DayPicker/DayPicker";
 import { Header } from "../../components/Header/Header";
 import { LabeledTextInput } from "../../components/LabeledTextInput/LabeledTextInput";
@@ -32,31 +32,50 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
 
             <Separator text='Create Workout' />
 
-            <ScrollView>
-                <LabeledTextInput
-                    label="Workout Name"
-                    style={{ width: '90%', alignSelf: 'center' }}
-                    placeholder="Enter workout name"
-                    value={workoutName}
-                    onChangeText={text => setWorkoutName(text)}
-                    onSubmitEditing={() => {
-                        if (workoutName.length > 0) {
-                            setShowDays(true)
-                        }
-                    }}
-                />
-                {showDays &&
-                    <DayPicker selectedDay={selectedDay} handleDayPress={handleDayPress} />
-                }
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}
+            >
 
-                {selectedDay &&
+                <ScrollView>
+                    <LabeledTextInput
+                        label="Workout Name"
+                        style={{ width: '90%', alignSelf: 'center' }}
+                        placeholder="Enter workout name"
+                        value={workoutName}
+                        onChangeText={text => setWorkoutName(text)}
+                    />
+
+
+                    <Separator text='Day of the week' />
+
+                    <DayPicker selectedDay={selectedDay} handleDayPress={handleDayPress} />
+
+
+                </ScrollView>
+
+                <View style={styles.buttonsContainer}>
                     <StyledButton
                         text="Create workout"
                         onPress={handleCreateWorkout}
                         customStyles={{ marginHorizontal: 10, height: 40 }}
+                        disabled={!workoutName || !selectedDay}
                     />
-                }
-            </ScrollView>
-        </PageWrapper>
+                </View>
+            </KeyboardAvoidingView>
+        </PageWrapper >
     )
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    buttonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+});

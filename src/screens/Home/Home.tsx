@@ -5,7 +5,7 @@ import { PageWrapper } from '../../components/PageWrapper/PageWrapper';
 import { Separator } from '../../components/Separator/Separator';
 import { StyledButton } from '../../components/StyledButton/StyledButton';
 import { WorkoutDetails } from '../../services/api/types';
-import { getWorkoutOfTheDay, hardResetProject } from '../../services/api/workoutClient';
+import { getWorkoutOfTheDay, hardResetProject, setUpDatabase } from '../../services/api/workoutClient';
 import { NavigationPageProps } from '../../types/navigation';
 
 export function Home({ navigation }: NavigationPageProps) {
@@ -21,9 +21,14 @@ export function Home({ navigation }: NavigationPageProps) {
         handleGetWorkoutOfTheDay()
     }, [])
 
+    useEffect(() => {
+        const setDataBase = async () => await setUpDatabase()
+        setDataBase()
+    }, [])
+
     return (
         <PageWrapper>
-            <Header navigate={navigation} showAddButton />
+            <Header navigate={navigation} />
             <ScrollView>
                 {workoutOfTheDay &&
                     <View>

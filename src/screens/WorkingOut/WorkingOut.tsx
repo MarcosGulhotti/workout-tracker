@@ -5,9 +5,8 @@ import { Input } from "../../components/Input/Input";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
-import { saveCompletedWorkout } from "../../services/api/hooks/ActiveWorkout/ActiveWorkout";
+import { getWeightsHistory, saveCompletedWorkout } from "../../services/api/hooks/ActiveWorkout/ActiveWorkout";
 import { Exercise } from "../../services/api/types";
-import { getCompletedWorkoutDetails } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export type SavedWeights = {
@@ -78,14 +77,13 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
      * @returns {string} - The weight for the specified set. If no saved weight is found, returns the default weight.
      */
     const getSavedWeights = async (index: number): Promise<string> => { //! TODO Check this function
-        const completedWorkout = await getCompletedWorkoutDetails(selectedWorkout.id)
+        console.log('getSavedWeights')
+        const weightHistory = await getWeightsHistory(selectedWorkout.id)
 
-        const arrayToMap = completedWorkout?.exercises ?? savedWeights
-
-        const savedWeight = arrayToMap.find((elm) => elm.exerciseId === currentExercise.id)
-
-        if (savedWeight) {
-            return savedWeight.sets[index].weight
+        const arrayToMap = weightHistory ?? savedWeights.find((elm) => elm.exerciseId === currentExercise.id)
+        
+        if (arrayToMap) {
+            return arrayToMap.sets[index].weight
         }
 
         return weights[index]
@@ -124,7 +122,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
                                     <View style={styles.repsContainer}>
                                         <Text>Weight - </Text>
                                         <View style={styles.centeredInput}>
-                                            <Input //TODO Add last workout weight
+                                            <Input //TODO Add last workout weight - TEST THIS
                                                 style={styles.repInput}
                                                 keyboardType="number-pad"
                                                 onChangeText={text => {
@@ -132,7 +130,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
                                                     newReps[index] = text;
                                                     setWeights(newReps);
                                                 }}
-                                                getValue={() => getSavedWeights(index)}
+                                                getValue={async () => await getSavedWeights(index)}
                                                 placeholder={set.weight}
                                             />
                                         </View>

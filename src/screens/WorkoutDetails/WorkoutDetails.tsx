@@ -41,7 +41,15 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
 
     return (
         <PageWrapper>
-            <Header navigate={navigation} handleClickActionButton={() => null} actionButtonIcon="play-circle" />
+            <Header
+                navigate={navigation}
+                handleClickActionButton={() => {
+                    if (workoutDetails) {
+                        navigation.navigate('WorkingOut', { selectedWorkout: workoutDetails })
+                    }
+                }}
+                actionButtonIcon="play-circle"
+            />
             <Separator text={selectedWorkout?.workout_name ?? 'Workout Details'} />
             <KeyboardAvoidingView
                 style={styles.container}

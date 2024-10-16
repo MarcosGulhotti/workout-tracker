@@ -78,3 +78,61 @@ export const saveCompletedWorkout = async ({ workout_id, workoutName, date, save
         );
     });
 };
+
+// Função para buscar o histórico de pesos de cada exercício e série
+export const getWeightsHistory = async (exerciseId: string) => {
+    return new Promise<SavedWeights | null>((resolve, reject) => {
+        // Buscar o exercício específico
+        const query = `SELECT id AS exerciseId, exercise_name FROM completed_exercises WHERE completed_workout_id = ?;`;
+        executeSql(
+            query,
+            [exerciseId],
+            (_, { rows }) => {
+                const exercise = rows._array[0];
+
+                if (!exercise) {
+                    console.log('Exercício não encontrado');
+                    reject(null);
+                    return;
+                }
+
+                let completedExercise: SavedWeights  = {
+                    exerciseId: exercise.exerciseId.toString(),
+                    exerciseName: exercise.exercise_name,
+                    sets: [],
+                };
+
+                // Buscar o histórico de pesos para o exercício
+                executeSql(
+                    `SELECT completed_exercise_id, set_number, weight
+                     FROM completed_sets
+                     WHERE completed_exercise_id = ?
+                     ORDER BY set_number ASC;`,
+                    [completedExercise.exerciseId],
+                    (_, { rows }) => {
+                        rows._array.forEach(set => {
+                            completedExercise.sets.push({
+                                setNumber: set.set_number,
+                                weight: set.weight,
+                                repetitions: '0',
+                            });
+                        });
+
+                        // Resolver a promise com o histórico de pesos do exercício
+                        return resolve(completedExercise);
+                    },
+                    (_, error) => {
+                        console.error('Erro ao buscar histórico de pesos:', error);
+                        reject(error);
+                        return !!error;
+                    }
+                );
+            },
+            (_, error) => {
+                console.error('Erro ao buscar exercício:', error);
+                reject(error);
+                return !!error;
+            }
+        );
+    });
+};
