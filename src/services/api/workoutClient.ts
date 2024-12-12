@@ -1,13 +1,10 @@
 import { getDay } from 'date-fns';
-import * as SQLite from 'expo-sqlite/legacy';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateCardioTable, CreateCompletedExercisesTable, CreateCompletedSetsTable, CreateCompletedWorkoutsTable, CreateExercisesTable, CreateSetsTable, CreateWorkout, CreateWorkoutTable, DropAllTables } from '../sql';
 import { AddExerciseToWorkout } from '../sql/Update/AddExerciseToWorkout';
 import { useDataBase } from './hooks/useDatabase';
 import { Exercise, ExerciseSet, WorkoutDetails } from './types';
-
-const database = SQLite.openDatabase('workout_database');
 
 const { executeSql, executeSqlBatch } = useDataBase();
 
@@ -132,7 +129,7 @@ export function addExerciseToWorkout(
     sets: ExerciseSet[]
 ) {
     const newExerciseId = uuidv4(); // Generate a UUID for the new exercise
-
+    //@ts-ignore
     executeSql(AddExerciseToWorkout, [newExerciseId, workout_id, exercise_name],
         async (_, result) => {
             console.log('Exercise inserted successfully', result);
@@ -142,6 +139,7 @@ export function addExerciseToWorkout(
                 sets.forEach(set => {
                     executeSql(
                         `INSERT INTO sets (id, exercise_id, set_number, repetitions, weight) VALUES (?, ?, ?, ?, ?);`,
+                        //@ts-ignore
                         [uuidv4(), newExerciseId, Number(set.set_number), Number(set.repetitions), String(set.weight)],
                         (_, result) => {
                             console.log('Set inserido com sucesso', result);

@@ -1,21 +1,28 @@
+import { CreateWorkoutProps } from "@/database/types";
+import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
 import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
-import { WorkoutDetails } from "../../services/api/types";
-import { listAllWorkouts } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
-    const [workouts, setWorkouts] = useState<WorkoutDetails[]>([])
+    const [workouts, setWorkouts] = useState<CreateWorkoutProps[]>([])
+
+    const workoutDatabase = useWorkoutDatabase();
 
     const handleListAllWorkouts = async () => {
-        const workouts = await listAllWorkouts();
+        const result = await workoutDatabase.listAllWorkouts().catch((err) => {
+            Alert.alert('Error', `There was an error listing all workouts: ${err.message}`);
+            return { allWorkouts: [] as CreateWorkoutProps[] };
+        });
 
-        setWorkouts(workouts);
+        if (result && result.allWorkouts) {
+            setWorkouts(result.allWorkouts);
+        }
     }
 
     useFocusEffect(

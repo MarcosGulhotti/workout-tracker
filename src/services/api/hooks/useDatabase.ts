@@ -1,46 +1,40 @@
-import * as SQLite from 'expo-sqlite/legacy';
+import * as SQLite from 'expo-sqlite';
 
-export type SQLExecCallback =  (sql: string, args?: SQLite.SQLStatementArg[], successCallback?: SQLite.SQLStatementCallback, errorCallback?: SQLite.SQLStatementErrorCallback) => void;
-export type SQLExecBatchCallback = (sqlStatements: { sql: string, args?: SQLite.SQLStatementArg[] }[], successCallback?: SQLite.SQLStatementCallback, errorCallback?: SQLite.SQLStatementErrorCallback) => void;
+type SQLExec = {
+    sql: string;
+    args?: SQLite.SQLiteBindParams[];
+}
+
+export type SQLExecCallback = (args: SQLExec) => void;
+export type SQLExecBatchCallback = (
+    sqlStatements: { sql: string, args?: SQLite.SQLiteBindParams[] }[],
+) => void;
+
+export const database = SQLite.openDatabaseSync('workout_database');
 
 export function useDataBase() {
-    const db = SQLite.openDatabase('workout_database');
+    const executeSql: SQLExecCallback = ({
+        sql,
+        args
+    }) => {
+        const query = database.prepareSync(sql);
 
-    const executeSql: SQLExecCallback = (
-        sql: string,
-        args: SQLite.SQLStatementArg[] = [],
-        successCallback?: SQLite.SQLStatementCallback,
-        errorCallback?: SQLite.SQLStatementErrorCallback
-    ) => {
-        return db.transaction((tx) => {
-            tx.executeSql(
-                sql,
-                args,
-                successCallback,
-                errorCallback
-            );
-        });
+        return query.executeSync(args ?? []);
     };
 
     const executeSqlBatch: SQLExecBatchCallback = (
         sqlStatements: {
             sql: string,
-            args?: SQLite.SQLStatementArg[],
+            args?: SQLite.SQLiteBindParams[] | undefined,
         }[],
-        successCallback?: SQLite.SQLStatementCallback,
-        errorCallback?: SQLite.SQLStatementErrorCallback
     ) => {
-        return db.transaction((tx) => {
-            sqlStatements.forEach(({ sql, args }) => {
-                tx.executeSql(
-                    sql,
-                    args || []
-                );
-            }),
-                successCallback,
-                errorCallback
+
+        sqlStatements.forEach(({ sql, args }) => {
+            const query = database.prepareSync(sql);
+
+            query.executeSync(args ?? []);
         });
-    }
+    };
 
     return {
         executeSql,

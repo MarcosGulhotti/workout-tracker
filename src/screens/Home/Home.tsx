@@ -1,3 +1,4 @@
+import { useWorkoutDatabase } from '@/database/useWorkoutDatabase';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Header } from '../../components/Header/Header';
@@ -5,11 +6,13 @@ import { PageWrapper } from '../../components/PageWrapper/PageWrapper';
 import { Separator } from '../../components/Separator/Separator';
 import { StyledButton } from '../../components/StyledButton/StyledButton';
 import { WorkoutDetails } from '../../services/api/types';
-import { getWorkoutOfTheDay, hardResetProject, setUpDatabase } from '../../services/api/workoutClient';
+import { getWorkoutOfTheDay } from '../../services/api/workoutClient';
 import { NavigationPageProps } from '../../types/navigation';
 
 export function Home({ navigation }: NavigationPageProps) {
     const [workoutOfTheDay, setWorkoutOfTheDay] = useState<WorkoutDetails | null>(null)
+
+    const workoutDatabase = useWorkoutDatabase();
 
     const handleGetWorkoutOfTheDay = useCallback(async () => {
         const workout = await getWorkoutOfTheDay()
@@ -21,16 +24,11 @@ export function Home({ navigation }: NavigationPageProps) {
         handleGetWorkoutOfTheDay()
     }, [])
 
-    useEffect(() => {
-        const setDataBase = async () => await setUpDatabase()
-        setDataBase()
-    }, [])
-
     return (
         <PageWrapper>
             <Header navigate={navigation} />
             <ScrollView>
-                {workoutOfTheDay &&
+                {/* {workoutOfTheDay &&
                     <View>
                         <Separator text='Quick Start' />
                         <StyledButton
@@ -39,7 +37,7 @@ export function Home({ navigation }: NavigationPageProps) {
                             onPress={() => navigation.navigate('WorkingOut', { selectedWorkout: workoutOfTheDay })}
                         />
                     </View>
-                }
+                } */}
                 <Separator text='Workouts' />
 
                 <View style={styles.buttonsContainer}>
@@ -59,7 +57,7 @@ export function Home({ navigation }: NavigationPageProps) {
                     />
                 </View>
 
-                <StyledButton text='RESET' onPress={hardResetProject} customStyles={{ margin: 10, height: 40 }} />
+                <StyledButton text='RESET' onPress={() => workoutDatabase.hardResetProject()} customStyles={{ margin: 10, height: 40 }} />
             </ScrollView>
         </PageWrapper>
     );

@@ -1,31 +1,31 @@
-import { useEffect, useMemo, useState } from "react";
+import { CreateWorkoutProps } from "@/database/types";
+import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
 import { deleteWorkout } from "../../services/api/hooks/DeleteWorkout/DeleteWorkout";
-import { WorkoutDetails } from "../../services/api/types";
-import { CompletedWorkoutDetails, getCompletedWorkoutDetails, getWorkoutDetails } from "../../services/api/workoutClient";
+import { CompletedWorkoutDetails } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
-    const [workoutDetails, setWorkoutDetails] = useState<WorkoutDetails | null>(null);
-
+    const [workoutDetails, setWorkoutDetails] = useState<CreateWorkoutProps | null>(null);
     const [completedWorkoutDetails, setCompletedWorkoutDetails] = useState<CompletedWorkoutDetails | null>(null)
 
     const selectedWorkout = useMemo(() => route.params ? route.params.selectedWorkout : null, [route]);
+
+    const workoutDatabase = useWorkoutDatabase();
 
     const handleGetWorkoutDetails = async () => {
         if (!selectedWorkout) {
             return;
         }
-        const test = await getCompletedWorkoutDetails(selectedWorkout?.id)
-        const output = await getWorkoutDetails(selectedWorkout.id);
 
-        setCompletedWorkoutDetails(test)
+        const { exercises } = await workoutDatabase.getDetailedWorkout(selectedWorkout.id);
 
-        setWorkoutDetails(output)
+        setWorkoutDetails({ ...selectedWorkout, exercises });
     }
 
     const handleDeleteWorkout = async () => {
@@ -35,6 +35,19 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
         }
     }
 
+    const handleNavigateToWorkingOut = useCallback(async () => {
+        if (!workoutDetails) {
+            return;
+        }
+        try {
+            const { history: lastSavedWorkout } = await workoutDatabase.checkWeigthHistory(workoutDetails.id);
+
+            navigation.navigate('WorkingOut', { selectedWorkout: workoutDetails, lastSavedWorkout });
+        } catch (error) {
+            console.error(error)
+        }
+    }, [workoutDetails])
+
     useEffect(() => {
         handleGetWorkoutDetails()
     }, [])
@@ -43,11 +56,7 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
         <PageWrapper>
             <Header
                 navigate={navigation}
-                handleClickActionButton={() => {
-                    if (workoutDetails) {
-                        navigation.navigate('WorkingOut', { selectedWorkout: workoutDetails })
-                    }
-                }}
+                handleClickActionButton={handleNavigateToWorkingOut}
                 actionButtonIcon="play-circle"
             />
             <Separator text={selectedWorkout?.workout_name ?? 'Workout Details'} />
@@ -61,7 +70,7 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
                         <View style={styles.createdExercisesContainer} key={index}>
                             <Text style={styles.texts}>{exercise.exercise_name}:</Text>
                             <View style={styles.setsContainer}>
-                                {exercise.sets.map((set, index) => (
+                                {exercise.sets?.map((set, index) => (
                                     <View style={styles.setsTextContainer} key={index}>
                                         <Text style={styles.setsText} key={index}>{`Set ${set.set_number}: ${set.repetitions} reps`}</Text>
                                     </View>

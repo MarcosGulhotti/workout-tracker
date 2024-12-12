@@ -1,3 +1,4 @@
+import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useMemo, useState } from "react";
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Header } from "../../components/Header/Header";
@@ -7,7 +8,6 @@ import { Separator } from "../../components/Separator/Separator";
 import { SetsInput } from "../../components/SetsInput/SetsInput";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
 import { ExerciseSet } from "../../services/api/types";
-import { addExerciseToWorkout } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function CreateExercises({ navigation, route }: NavigationPageProps) {
@@ -20,13 +20,17 @@ export function CreateExercises({ navigation, route }: NavigationPageProps) {
 
     const selectedWorkout = useMemo(() => route.params ? route.params.selectedWorkout : null, [route]);
 
+    const workoutDatabase = useWorkoutDatabase();
+
     const handleSaveExercises = async () => {
         if (!selectedWorkout) {
             return;
         }
 
         savedExercises.forEach(async (elm) => {
-            await addExerciseToWorkout(selectedWorkout.id, elm.exerciseName, elm.sets);
+            const exercises = workoutDatabase.addExerciseToWorkout(selectedWorkout.id, elm.exerciseName, elm.sets);
+            console.log(exercises);
+            // await addExerciseToWorkout(selectedWorkout.id, elm.exerciseName, elm.sets);
         })
 
         setReps([]);
@@ -90,7 +94,7 @@ export function CreateExercises({ navigation, route }: NavigationPageProps) {
                             }
                         }}
                         type="number-pad"
-                        onSubmitEditing={() => Keyboard.dismiss}
+                        onSubmitEditing={Keyboard.dismiss}
                     />
 
                     <SetsInput

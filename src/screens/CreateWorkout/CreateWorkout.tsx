@@ -1,3 +1,4 @@
+import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import DayPicker from "../../components/DayPicker/DayPicker";
@@ -6,7 +7,6 @@ import { LabeledTextInput } from "../../components/LabeledTextInput/LabeledTextI
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
-import { createNewWorkout } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function CreateWorkout({ navigation }: NavigationPageProps) {
@@ -16,12 +16,14 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
 
     const [showDays, setShowDays] = useState(false)
 
+    const workoutDatabase = useWorkoutDatabase();
+
     const handleDayPress = (day: number) => {
         setSelectedDay(day);
     };
 
     const handleCreateWorkout = async () => {
-        const newWorkout = await createNewWorkout(workoutName, String(selectedDay));
+        const newWorkout = await workoutDatabase.createWorkout({ selectedDay: String(selectedDay), workout_name: workoutName });
 
         navigation.navigate('CreateExercise', { selectedWorkout: newWorkout });
     }
@@ -60,7 +62,7 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
                         text="Create workout"
                         onPress={handleCreateWorkout}
                         customStyles={{ marginHorizontal: 10, height: 40 }}
-                        disabled={!workoutName || !selectedDay}
+                        disabled={!workoutName || selectedDay === null}
                     />
                 </View>
             </KeyboardAvoidingView>
