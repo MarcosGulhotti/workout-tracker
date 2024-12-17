@@ -34,7 +34,7 @@ export function SetsInput(props: SetsInputProps) {
                                 inputRefs.current[index] = ref
                             }
                         }} // Attach a ref to each TextInput
-                        placeholder={`Set ${index + 1}`}
+                        placeholder={`Set ${index + 1} reps`}
                         keyboardType="number-pad"
                         value={reps[index]}
                         onChangeText={text => {
@@ -68,7 +68,6 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        flexGrow: 1,
         padding: 10,
         borderRadius: 10,
     }

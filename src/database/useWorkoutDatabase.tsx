@@ -1,21 +1,13 @@
 import { useSQLiteContext } from "expo-sqlite";
-import { CreateWorkoutProps, ExerciseForWorkout, ExerciseSet, Workout } from "./types";
+import { CreateWorkoutProps, ExerciseForWorkout, ExerciseSet } from "./types";
 
 import { CompletedExercise, CompletedWorkout } from "@/services/api/types";
 import { v4 as uuidv4 } from 'uuid';
-
-type ExerciseData = {
-    id: number;
-    completed_workout_id: string;
-    completed_exercise_id: string;
-    exercise_name: string;
-};
 
 /**
  * Querys precisam ser nesse modelo de agora em diante
  * INSET INTO table_name (column1, column2, column3, ...) VALUES ($value1, $value2, $value3, ...);
  */
-
 export function useWorkoutDatabase() {
     const database = useSQLiteContext()
 
@@ -117,37 +109,64 @@ export function useWorkoutDatabase() {
         }
     }
 
-    async function createWorkout({ name, exercises }: Workout) {
-        const workoutStatement = await database.prepareAsync(`
-            INSERT INTO workouts (name) VALUES (?);
-        `);
+    async function createWorkout({ workoutName, exercises }: CreateWorkoutProps) {
+        console.log("🚀 Starting to create workout:", workoutName);
 
         try {
-            const workoutResult = await workoutStatement.executeAsync<Workout>([name]);
-            const workoutId = workoutResult.lastInsertRowId;
+            // Inicia uma transação para garantir consistência
+            await database.execAsync("BEGIN TRANSACTION;");
+
+            // Insere o workout
+            const insertWorkoutQuery = `
+            INSERT INTO workouts (name) VALUES (?);
+        `;
+            const resultWorkout = await database.runAsync(insertWorkoutQuery, [workoutName]);
+            const workoutId = resultWorkout.lastInsertRowId;
+
+            console.log("✅ Workout created with ID:", workoutId);
 
             for (const exercise of exercises) {
-                const exerciseStatement = await database.prepareAsync(`
-                    INSERT INTO exercises (workout_id, name) VALUES (?, ?);
-                `);
+                console.log("🚀 Adding exercise:", exercise.exerciseName);
 
-                const exerciseResult = await exerciseStatement.executeAsync([workoutId, exercise.name]);
-                const exerciseId = exerciseResult.lastInsertRowId;
+                // Insere o exercício vinculado ao workout
+                const insertExerciseQuery = `
+                INSERT INTO exercises (workout_id, name) VALUES (?, ?);
+            `;
+                const resultExercise = await database.runAsync(insertExerciseQuery, [
+                    workoutId,
+                    exercise.exerciseName,
+                ]);
+                const exerciseId = resultExercise.lastInsertRowId;
 
+                console.log("✅ Exercise added with ID:", exerciseId);
+
+                // Insere os sets vinculados ao exercício
                 for (const set of exercise.sets) {
-                    const setStatement = await database.prepareAsync(`
-                        INSERT INTO sets (exercise_id, set_number, repetitions) VALUES (?, ?, ?);
-                    `);
-                    await setStatement.executeAsync([exerciseId, set.set_number, set.repetitions]);
-                    await setStatement.finalizeAsync();
-                }
+                    console.log("🚀 Adding set:", set);
 
-                await exerciseStatement.finalizeAsync();
+                    const insertSetQuery = `
+                    INSERT INTO sets (exercise_id, set_number, repetitions) VALUES (?, ?, ?);
+                `;
+                    await database.runAsync(insertSetQuery, [
+                        exerciseId,
+                        set.set_number,
+                        set.repetitions,
+                    ]);
+
+                    console.log("✅ Set added for exercise ID:", exerciseId);
+                }
             }
 
-            await workoutStatement.finalizeAsync();
+            // Commit da transação
+            await database.execAsync("COMMIT;");
+            console.log("🎉 Workout creation completed successfully.");
+
+            return { response: "Workout created successfully." };
         } catch (error) {
             console.error("❌ Error saving workout:", error);
+
+            // Rollback em caso de falha
+            await database.execAsync("ROLLBACK;");
             throw error;
         }
     }
@@ -284,8 +303,6 @@ export function useWorkoutDatabase() {
         }
     }
 
-
-
     /**
       * Saves a completed workout along with its exercises and sets into the database.
       *
@@ -363,133 +380,52 @@ export function useWorkoutDatabase() {
         }
     };
 
-    async function hardResetProject(database: any): Promise<void> {
-        // Queries para manipular as foreign keys
-        const disableForeignKeys = "PRAGMA foreign_keys = OFF;";
-        const enableForeignKeys = "PRAGMA foreign_keys = ON;";
+    async function hardResetProject() {
+        console.log("🚧 Resetting database...");
 
-        // Queries para dropar as tabelas existentes
-        const dropTablesQueries = [
+        const queries = [
+            "PRAGMA foreign_keys = OFF;",
             "DROP TABLE IF EXISTS cardio;",
             "DROP TABLE IF EXISTS completed_exercises;",
             "DROP TABLE IF EXISTS completed_sets;",
             "DROP TABLE IF EXISTS completed_workouts;",
             "DROP TABLE IF EXISTS exercises;",
             "DROP TABLE IF EXISTS sets;",
-            "DROP TABLE IF EXISTS workouts;"
-        ];
+            "DROP TABLE IF EXISTS workouts;",
+            "PRAGMA foreign_keys = ON;",
 
-        // Queries para recriar as tabelas
-        const createTablesQueries = [
+            // Recriação das tabelas
             `
-            CREATE TABLE IF NOT EXISTS cardio (
+            CREATE TABLE IF NOT EXISTS workouts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                workout_id INTEGER,
-                description TEXT,
-                duration INTEGER,
-                speed REAL,
-                FOREIGN KEY (workout_id) REFERENCES workouts (id) ON DELETE CASCADE
-            );
-            `,
-            `
-            CREATE TABLE IF NOT EXISTS completed_exercises (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                completed_workout_id INTEGER NOT NULL,
-                exercise_name TEXT NOT NULL,
-                FOREIGN KEY (completed_workout_id) REFERENCES completed_workouts (id) ON DELETE CASCADE
-            );
-            `,
-            `
-            CREATE TABLE IF NOT EXISTS completed_sets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                completed_exercise_id INTEGER NOT NULL,
-                set_number INTEGER NOT NULL,
-                repetitions INTEGER NOT NULL,
-                weight REAL NOT NULL,
-                observation TEXT,
-                FOREIGN KEY (completed_exercise_id) REFERENCES completed_exercises (id) ON DELETE CASCADE
-            );
-            `,
-            `
-            CREATE TABLE IF NOT EXISTS completed_workouts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                workout_id TEXT NOT NULL,
-                workout_name TEXT NOT NULL,
-                date TEXT NOT NULL,
-                FOREIGN KEY (workout_id) REFERENCES workouts (id) ON DELETE CASCADE
+                name TEXT NOT NULL
             );
             `,
             `
             CREATE TABLE IF NOT EXISTS exercises (
-                id TEXT PRIMARY KEY,
-                workout_id TEXT NOT NULL,
-                exercise_name TEXT NOT NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workout_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
                 FOREIGN KEY (workout_id) REFERENCES workouts (id) ON DELETE CASCADE
             );
             `,
             `
             CREATE TABLE IF NOT EXISTS sets (
-                id TEXT PRIMARY KEY,
-                exercise_id TEXT NOT NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exercise_id INTEGER NOT NULL,
                 set_number INTEGER NOT NULL,
                 repetitions INTEGER NOT NULL,
-                weight TEXT NOT NULL,
                 FOREIGN KEY (exercise_id) REFERENCES exercises (id) ON DELETE CASCADE
             );
             `,
-            `
-            CREATE TABLE IF NOT EXISTS workouts (
-                id TEXT PRIMARY KEY,
-                workout_name TEXT NOT NULL,
-                day_of_week TEXT NOT NULL
-            );
-            `
         ];
 
-        try {
-            console.log("🚨 Starting hard reset...");
-
-            // Desabilita constraints de chave estrangeira
-            await database.execAsync(disableForeignKeys);
-            console.log("🔧 Foreign keys disabled.");
-
-            // Dropa todas as tabelas
-            for (const query of dropTablesQueries) {
-                console.log(`🗑 Dropping table with query: ${query}`);
-                await database.execAsync(query);
-            }
-
-            // Recria todas as tabelas
-            for (const query of createTablesQueries) {
-                console.log(`🔨 Creating table with query: ${query}`);
-                await database.execAsync(query);
-            }
-
-            // Reabilita constraints de chave estrangeira
-            await database.execAsync(enableForeignKeys);
-            console.log("🔧 Foreign keys enabled.");
-
-            // Validação: Verificar o esquema das tabelas
-            const tablesToVerify = [
-                "cardio",
-                "completed_exercises",
-                "completed_sets",
-                "completed_workouts",
-                "exercises",
-                "sets",
-                "workouts"
-            ];
-            for (const tableName of tablesToVerify) {
-                console.log(`🔍 Verifying schema for table: ${tableName}`);
-                const result = await database.getAllAsync(`PRAGMA table_info(${tableName});`);
-                console.log(`✅ Schema for ${tableName}:`, result);
-            }
-
-            console.log("🎉 Project hard reset completed successfully!");
-        } catch (error) {
-            console.error("❌ Error during hard reset:", error);
-            throw new Error("Failed to perform hard reset.");
+        for (const query of queries) {
+            await database.execAsync(query);
+            console.log(`✅ Executed: ${query}`);
         }
+
+        console.log("🎉 Database reset completed.");
     }
 
     return { create, listAllWorkouts, createWorkout, addExerciseToWorkout, getDetailedWorkout, checkWeigthHistory, saveCompletedWorkout, hardResetProject }

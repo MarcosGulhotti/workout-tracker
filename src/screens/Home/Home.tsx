@@ -57,7 +57,7 @@ export function Home({ navigation }: NavigationPageProps) {
                     />
                 </View>
 
-                <StyledButton text='RESET' onPress={() => workoutDatabase.hardResetProject()} customStyles={{ margin: 10, height: 40 }} />
+                <StyledButton text='RESET' onPress={workoutDatabase.hardResetProject} customStyles={{ margin: 10, height: 40 }} />
             </ScrollView>
         </PageWrapper>
     );
