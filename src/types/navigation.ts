@@ -1,14 +1,13 @@
-import { Workout } from "@/database/types";
 import { RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 export type RootStackParamList = {
     Home: undefined; // No params expected
-    CreateWorkout: undefined  // No params expected
-    CreateExercise: { selectedWorkout: Workout };
+    CreateWorkout: undefined;  // No params expected
+    CreateExercise: undefined; // No params expected
     ListAllWorkouts: undefined;
     WorkoutDetails: { workoutId: string };
-    WorkingOut: { selectedWorkout: Workout, lastSavedWorkout: Workout | null }
+    WorkingOut: { workoutId: string }
 };
 
 type KeyOfRootStackParamList = keyof RootStackParamList

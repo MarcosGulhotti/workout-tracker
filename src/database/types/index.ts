@@ -21,7 +21,7 @@ export type Exercise = {
     id: string;
     workout_id: number;
     name: string;
-    sets: Set[];
+    sets?: Set[];
 }
 
 export type Set = {
@@ -63,3 +63,13 @@ export type CreateExerciseProps = {
         repetitions: number;
     }[]
 }
+
+export type WorkoutDetails = {
+    workout_id: string;
+    workout_name: string;
+    exercises: {
+        exercise_id: string;
+        exercise_name: string;
+        sets: Set[];
+    }[];
+};

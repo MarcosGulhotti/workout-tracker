@@ -1,4 +1,4 @@
-import { CreateWorkoutProps } from "@/database/types";
+import { WorkoutDetails } from "@/database/types";
 import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -6,47 +6,23 @@ import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
-import { deleteWorkout } from "../../services/api/hooks/DeleteWorkout/DeleteWorkout";
 import { CompletedWorkoutDetails } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
-    const [workoutDetails, setWorkoutDetails] = useState<CreateWorkoutProps | null>(null);
+    const [workoutDetails, setWorkoutDetails] = useState<WorkoutDetails | null>(null);
     const [completedWorkoutDetails, setCompletedWorkoutDetails] = useState<CompletedWorkoutDetails | null>(null)
 
-    const selectedWorkout = useMemo(() => route.params ? route.params.selectedWorkout : null, [route]);
+    const workoutId = useMemo(() => route.params ? route.params.workoutId : null, [route]);
 
     const workoutDatabase = useWorkoutDatabase();
 
-    const handleGetWorkoutDetails = async () => {
-        if (!selectedWorkout) {
-            return;
-        }
+    const handleGetWorkoutDetails = useCallback(async () => {
+        if (!workoutId) return; // Type Safety
+        const workout = await workoutDatabase.getWorkoutDetails(workoutId);
 
-        const { exercises } = await workoutDatabase.getDetailedWorkout(selectedWorkout.id);
-
-        setWorkoutDetails({ ...selectedWorkout, exercises });
-    }
-
-    const handleDeleteWorkout = async () => {
-        if (selectedWorkout && selectedWorkout.id) {
-            await deleteWorkout(selectedWorkout.id)
-            navigation.navigate('ListAllWorkouts');
-        }
-    }
-
-    const handleNavigateToWorkingOut = useCallback(async () => {
-        if (!workoutDetails) {
-            return;
-        }
-        try {
-            const { history: lastSavedWorkout } = await workoutDatabase.checkWeigthHistory(workoutDetails.id);
-
-            navigation.navigate('WorkingOut', { selectedWorkout: workoutDetails, lastSavedWorkout });
-        } catch (error) {
-            console.error(error)
-        }
-    }, [workoutDetails])
+        setWorkoutDetails(workout);
+    }, [])
 
     useEffect(() => {
         handleGetWorkoutDetails()
@@ -56,10 +32,10 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
         <PageWrapper>
             <Header
                 navigate={navigation}
-                handleClickActionButton={handleNavigateToWorkingOut}
+                handleClickActionButton={() => null}
                 actionButtonIcon="play-circle"
             />
-            <Separator text={selectedWorkout?.workout_name ?? 'Workout Details'} />
+            <Separator text={'Workout Details'} />
             <KeyboardAvoidingView
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -91,7 +67,7 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
                     />
                     <StyledButton
                         text="Delete"
-                        onPress={handleDeleteWorkout}
+                        onPress={() => null}
                         customStyles={{ marginHorizontal: 10, height: 40 }}
                         iconName="delete"
                         showIcon
