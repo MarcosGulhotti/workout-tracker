@@ -6,12 +6,10 @@ import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
-import { CompletedWorkoutDetails } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
     const [workoutDetails, setWorkoutDetails] = useState<WorkoutDetails | null>(null);
-    const [completedWorkoutDetails, setCompletedWorkoutDetails] = useState<CompletedWorkoutDetails | null>(null)
 
     const workoutId = useMemo(() => route.params ? route.params.workoutId : null, [route]);
 
@@ -22,6 +20,21 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
         const workout = await workoutDatabase.getWorkoutDetails(workoutId);
 
         setWorkoutDetails(workout);
+    }, [])
+
+    const handleDeleteWorkout = useCallback(async () => {
+        if (!workoutId) return; // Type Safety
+        const { response } = await workoutDatabase.deleteWorkout(workoutId);
+
+        if (response === 'Workout deleted') {
+            navigation.navigate('ListAllWorkouts');
+        }
+    }, [])
+
+    const handleGetHistory = useCallback(async () => {
+        if (!workoutId) return; // Type Safety
+        const completedWorkouts = await workoutDatabase.getWorkoutHistory(workoutId);
+        console.log("🚀 Completed Workouts History:", JSON.stringify(completedWorkouts, null, 2));
     }, [])
 
     useEffect(() => {
@@ -60,14 +73,14 @@ export function WorkoutDetailsPage({ navigation, route }: NavigationPageProps) {
                 <View style={styles.buttonsContainer}>
                     <StyledButton
                         text="History"
-                        onPress={() => null}
+                        onPress={handleGetHistory}
                         customStyles={{ marginHorizontal: 10, height: 40 }}
                         iconName="history"
                         showIcon
                     />
                     <StyledButton
                         text="Delete"
-                        onPress={() => null}
+                        onPress={handleDeleteWorkout}
                         customStyles={{ marginHorizontal: 10, height: 40 }}
                         iconName="delete"
                         showIcon

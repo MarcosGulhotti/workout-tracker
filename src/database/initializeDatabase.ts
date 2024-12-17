@@ -30,6 +30,7 @@ export async function initializeDatabase(database: SQLiteDatabase) {
     await database.execAsync(`
         CREATE TABLE IF NOT EXISTS completed_workouts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workout_name TEXT NOT NULL,
             workout_id INTEGER NOT NULL,
             date TEXT NOT NULL,
             FOREIGN KEY (workout_id) REFERENCES workouts (id) ON DELETE CASCADE

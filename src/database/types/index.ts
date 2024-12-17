@@ -33,14 +33,17 @@ export type Set = {
 
 export type CompletedWorkout = {
     id: string;
+    workout_name: string;
     workout_id: number;
     date: string;
+    completed_exercises?: CompletedExercise[];
 }
 
 export type CompletedExercise = {
     id: string;
     completed_workout_id: number;
     name: string;
+    completed_sets?: CompletedSet[];
 }
 
 export type CompletedSet = {

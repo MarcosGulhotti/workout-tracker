@@ -1,5 +1,5 @@
 import { useSQLiteContext } from "expo-sqlite";
-import { CreateWorkoutProps, Exercise, Set, Workout, WorkoutDetails } from "./types";
+import { CompletedExercise, CompletedSet, CompletedWorkout, CreateWorkoutProps, Exercise, Set, Workout, WorkoutDetails } from "./types";
 
 
 /**
@@ -169,16 +169,110 @@ export function useWorkoutDatabase() {
         }
     }
 
-    /**
-      * Saves a completed workout along with its exercises and sets into the database.
-      *
-      * @param {Object} workoutData - The workout data to save.
-      * @param {string} workoutData.workout_id - The ID of the workout.
-      * @param {string} workoutData.workoutName - The name of the workout.
-      * @param {string} workoutData.date - The date the workout was completed.
-      * @param {Array} workoutData.savedWeights - Array of exercises and their sets.
-      * @returns {Promise<void>} A promise that resolves when the workout is successfully saved.
-      */
+    async function deleteWorkout(workoutId: string): Promise<{ response: string }> {
+        try {
+            console.log("🚀 Deleting workout with ID:", workoutId);
+
+            // Deleta o workout
+            const deleteWorkoutQuery = `
+                DELETE FROM workouts
+                WHERE id = ?;
+            `;
+            const deleteStatement = await database.prepareAsync(deleteWorkoutQuery);
+            await deleteStatement.executeAsync([workoutId]);
+
+            console.log("✅ Workout and related exercises/sets deleted successfully.");
+            await deleteStatement.finalizeAsync();
+
+            return { response: "Workout deleted" };
+        } catch (error) {
+            console.error("❌ Error deleting workout:", error);
+            throw error;
+        }
+    }
+
+    async function getWorkoutHistory(workoutId: string): Promise<CompletedWorkout[]> {
+        try {
+            console.log("🚀 Fetching all completed workouts for workout ID:", workoutId);
+    
+            // Query para buscar TODOS os completed_workouts associados ao workout_id
+            const completedWorkoutsQuery = `
+                SELECT id, workout_id, workout_name, date
+                FROM completed_workouts
+                WHERE workout_id = ?
+                ORDER BY date DESC;
+            `;
+            const workoutStatement = await database.prepareAsync(completedWorkoutsQuery);
+            const workoutResult = await workoutStatement.executeAsync<CompletedWorkout>([workoutId]);
+            const workoutData = await workoutResult.getAllAsync();
+    
+            if (workoutData.length === 0) {
+                console.log("❌ No completed workouts found for the given workout ID.");
+                return [];
+            }
+    
+            const completedWorkouts: CompletedWorkout[] = [];
+    
+            // Query para buscar os exercícios relacionados
+            const completedExercisesQuery = `
+                SELECT id, completed_workout_id, name
+                FROM completed_exercises
+                WHERE completed_workout_id = ?;
+            `;
+    
+            // Query para buscar os sets relacionados a cada exercício
+            const completedSetsQuery = `
+                SELECT id, set_number, repetitions, weight, completed_exercise_id
+                FROM completed_sets
+                WHERE completed_exercise_id = ?
+                ORDER BY set_number ASC;
+            `;
+    
+            for (const workout of workoutData) {
+                const exercisesStatement = await database.prepareAsync(completedExercisesQuery);
+                const exercisesResult = await exercisesStatement.executeAsync<CompletedExercise>([workout.id]);
+                const exercisesData = await exercisesResult.getAllAsync();
+    
+                const completedExercises: CompletedExercise[] = [];
+    
+                for (const exercise of exercisesData) {
+                    const setsStatement = await database.prepareAsync(completedSetsQuery);
+                    const setsResult = await setsStatement.executeAsync<CompletedSet>([exercise.id]);
+                    const setsData = await setsResult.getAllAsync();
+    
+                    completedExercises.push({
+                        id: exercise.id,
+                        completed_workout_id: exercise.completed_workout_id,
+                        name: exercise.name,
+                        completed_sets: setsData,
+                    });
+    
+                    await setsStatement.finalizeAsync();
+                }
+    
+                completedWorkouts.push({
+                    id: workout.id,
+                    workout_id: workout.workout_id,
+                    workout_name: workout.workout_name,
+                    date: workout.date,
+                    completed_exercises: completedExercises,
+                });
+    
+                await exercisesStatement.finalizeAsync();
+            }
+    
+            console.log("🎉 All completed workouts fetched successfully:", completedWorkouts);
+    
+            await workoutStatement.finalizeAsync();
+    
+            return completedWorkouts;
+        } catch (error) {
+            console.error("❌ Error fetching completed workouts:", error);
+            throw error;
+        }
+    }
+
+
     const saveCompletedWorkout = async ({
         workout_id,
         workoutName,
@@ -299,6 +393,8 @@ export function useWorkoutDatabase() {
         createWorkout,
         getWorkoutDetails,
         saveCompletedWorkout,
-        hardResetProject
+        deleteWorkout,
+        hardResetProject,
+        getWorkoutHistory
     }
 }
