@@ -1,5 +1,5 @@
 import { useSQLiteContext } from "expo-sqlite";
-import { CreateWorkoutProps, ExerciseForWorkout, ExerciseSet } from "./types";
+import { CreateWorkoutProps, ExerciseForWorkout, ExerciseSet, Workout } from "./types";
 
 import { CompletedExercise, CompletedWorkout } from "@/services/api/types";
 import { v4 as uuidv4 } from 'uuid';
@@ -117,37 +117,38 @@ export function useWorkoutDatabase() {
         }
     }
 
-    /**
-     * Creates a new workout entry in the database.
-     *
-     * @param {Object} params - The parameters for creating a workout.
-     * @param {string} params.selectedDay - The day of the week for the workout.
-     * @param {string} params.workoutName - The name of the workout.
-     * @returns {Promise<{ id: string, workoutName: string, selectedDay: string }>} 
-     *          A promise that resolves to an object containing the id, workoutName, and selectedDay of the created workout.
-     * @throws Will throw an error if the database operation fails.
-     */
-    async function createWorkout({ selectedDay, workout_name }: Omit<CreateWorkoutProps, 'id'>) {
-        const statement = await database.prepareAsync("INSERT INTO workouts (id, workout_name, day_of_week) VALUES ($id, $workoutName, $selectedDay)");
-
-        const id = uuidv4();
-
-        const data = {
-            $id: id,
-            $workoutName: workout_name,
-            $selectedDay: selectedDay
-        }
+    async function createWorkout({ name, exercises }: Workout) {
+        const workoutStatement = await database.prepareAsync(`
+            INSERT INTO workouts (name) VALUES (?);
+        `);
 
         try {
-            const results = await statement.executeAsync(data);
+            const workoutResult = await workoutStatement.executeAsync<Workout>([name]);
+            const workoutId = workoutResult.lastInsertRowId;
 
-            console.log(results);
+            for (const exercise of exercises) {
+                const exerciseStatement = await database.prepareAsync(`
+                    INSERT INTO exercises (workout_id, name) VALUES (?, ?);
+                `);
 
-            return { id, workout_name, selectedDay }
+                const exerciseResult = await exerciseStatement.executeAsync([workoutId, exercise.name]);
+                const exerciseId = exerciseResult.lastInsertRowId;
+
+                for (const set of exercise.sets) {
+                    const setStatement = await database.prepareAsync(`
+                        INSERT INTO sets (exercise_id, set_number, repetitions) VALUES (?, ?, ?);
+                    `);
+                    await setStatement.executeAsync([exerciseId, set.set_number, set.repetitions]);
+                    await setStatement.finalizeAsync();
+                }
+
+                await exerciseStatement.finalizeAsync();
+            }
+
+            await workoutStatement.finalizeAsync();
         } catch (error) {
-            throw error
-        } finally {
-            await statement.finalizeAsync();
+            console.error("❌ Error saving workout:", error);
+            throw error;
         }
     }
 
@@ -223,39 +224,39 @@ export function useWorkoutDatabase() {
             ORDER BY id DESC
             LIMIT 1;
         `);
-    
+
         try {
             // Fetch the last completed workout for the given workoutId
             const workoutResults = await lastWorkoutStatement.executeAsync<CompletedWorkout>([workoutId]);
             const workoutData = await workoutResults.getAllAsync();
-    
+
             if (workoutData.length === 0) {
                 return { history: null }; // No workout found
             }
-    
+
             const workout = workoutData[0];
-    
+
             // Fetch the last exercise for the workout
             const exerciseResults = await lastExerciseStatement.executeAsync<CompletedExercise>([workout.workout_id]);
             const exerciseData = await exerciseResults.getAllAsync();
-    
+
             if (exerciseData.length === 0) {
                 return { history: null }; // No exercises found
             }
-    
+
             const lastExercise = exerciseData[0];
-    
+
             // Fetch the last set for the last exercise
             const setResults = await lastSetStatement.executeAsync<ExerciseSet>([lastExercise.completed_exercise_id]);
             const setData = await setResults.getAllAsync();
-    
+
             const lastSet = setData.map((set) => ({
                 set_number: set.set_number,
                 weight: set.weight || "0",
                 repetitions: set.repetitions || "0",
                 completed_exercise_id: lastExercise.completed_exercise_id,
             }));
-    
+
             // Construct the final `CompletedWorkout` object
             const history: CompletedWorkout = {
                 workout_id: workout.workout_id,
@@ -270,7 +271,7 @@ export function useWorkoutDatabase() {
                     },
                 ],
             };
-    
+
             return { history };
         } catch (error) {
             console.error("Error retrieving weight history:", error);
@@ -282,7 +283,7 @@ export function useWorkoutDatabase() {
             await lastSetStatement.finalizeAsync();
         }
     }
-    
+
 
 
     /**
@@ -362,11 +363,12 @@ export function useWorkoutDatabase() {
         }
     };
 
-    async function hardResetProject(): Promise<void> {
-        const disableForeignKeysStatement = await database.prepareAsync("PRAGMA foreign_keys = OFF;");
-        const enableForeignKeysStatement = await database.prepareAsync("PRAGMA foreign_keys = ON;");
+    async function hardResetProject(database: any): Promise<void> {
+        // Queries para manipular as foreign keys
+        const disableForeignKeys = "PRAGMA foreign_keys = OFF;";
+        const enableForeignKeys = "PRAGMA foreign_keys = ON;";
 
-        // All drop table queries
+        // Queries para dropar as tabelas existentes
         const dropTablesQueries = [
             "DROP TABLE IF EXISTS cardio;",
             "DROP TABLE IF EXISTS completed_exercises;",
@@ -377,7 +379,7 @@ export function useWorkoutDatabase() {
             "DROP TABLE IF EXISTS workouts;"
         ];
 
-        // All create table queries
+        // Queries para recriar as tabelas
         const createTablesQueries = [
             `
             CREATE TABLE IF NOT EXISTS cardio (
@@ -392,8 +394,7 @@ export function useWorkoutDatabase() {
             `
             CREATE TABLE IF NOT EXISTS completed_exercises (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                completed_workout_id TEXT NOT NULL,
-                completed_exercise_id TEXT NOT NULL,
+                completed_workout_id INTEGER NOT NULL,
                 exercise_name TEXT NOT NULL,
                 FOREIGN KEY (completed_workout_id) REFERENCES completed_workouts (id) ON DELETE CASCADE
             );
@@ -401,10 +402,10 @@ export function useWorkoutDatabase() {
             `
             CREATE TABLE IF NOT EXISTS completed_sets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                completed_exercise_id INTEGER,
-                set_number INTEGER,
-                repetitions INTEGER,
-                weight REAL,
+                completed_exercise_id INTEGER NOT NULL,
+                set_number INTEGER NOT NULL,
+                repetitions INTEGER NOT NULL,
+                weight REAL NOT NULL,
                 observation TEXT,
                 FOREIGN KEY (completed_exercise_id) REFERENCES completed_exercises (id) ON DELETE CASCADE
             );
@@ -412,10 +413,10 @@ export function useWorkoutDatabase() {
             `
             CREATE TABLE IF NOT EXISTS completed_workouts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                workout_id TEXT,
+                workout_id TEXT NOT NULL,
                 workout_name TEXT NOT NULL,
-                date TEXT,
-                FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE
+                date TEXT NOT NULL,
+                FOREIGN KEY (workout_id) REFERENCES workouts (id) ON DELETE CASCADE
             );
             `,
             `
@@ -429,10 +430,10 @@ export function useWorkoutDatabase() {
             `
             CREATE TABLE IF NOT EXISTS sets (
                 id TEXT PRIMARY KEY,
-                exercise_id TEXT,
-                set_number INTEGER,
-                repetitions INTEGER,
-                weight TEXT,
+                exercise_id TEXT NOT NULL,
+                set_number INTEGER NOT NULL,
+                repetitions INTEGER NOT NULL,
+                weight TEXT NOT NULL,
                 FOREIGN KEY (exercise_id) REFERENCES exercises (id) ON DELETE CASCADE
             );
             `,
@@ -446,33 +447,29 @@ export function useWorkoutDatabase() {
         ];
 
         try {
-            console.log("Starting hard reset...");
+            console.log("🚨 Starting hard reset...");
 
-            // Disable foreign key constraints
-            await disableForeignKeysStatement.executeAsync();
-            console.log("Foreign keys disabled.");
+            // Desabilita constraints de chave estrangeira
+            await database.execAsync(disableForeignKeys);
+            console.log("🔧 Foreign keys disabled.");
 
-            // Drop all tables
+            // Dropa todas as tabelas
             for (const query of dropTablesQueries) {
-                const statement = await database.prepareAsync(query);
-                await statement.executeAsync();
-                console.log(`${query} executed successfully.`);
-                await statement.finalizeAsync();
+                console.log(`🗑 Dropping table with query: ${query}`);
+                await database.execAsync(query);
             }
 
-            // Recreate all tables
+            // Recria todas as tabelas
             for (const query of createTablesQueries) {
-                const statement = await database.prepareAsync(query);
-                await statement.executeAsync();
-                console.log(`${query} executed successfully.`);
-                await statement.finalizeAsync();
+                console.log(`🔨 Creating table with query: ${query}`);
+                await database.execAsync(query);
             }
 
-            // Re-enable foreign key constraints
-            await enableForeignKeysStatement.executeAsync();
-            console.log("Foreign keys enabled.");
+            // Reabilita constraints de chave estrangeira
+            await database.execAsync(enableForeignKeys);
+            console.log("🔧 Foreign keys enabled.");
 
-            // Verify table schemas
+            // Validação: Verificar o esquema das tabelas
             const tablesToVerify = [
                 "cardio",
                 "completed_exercises",
@@ -483,21 +480,17 @@ export function useWorkoutDatabase() {
                 "workouts"
             ];
             for (const tableName of tablesToVerify) {
-                const statement = await database.prepareAsync(`PRAGMA table_info(${tableName});`);
-                const result = await statement.executeAsync();
-                const schema = await result.getAllAsync();
-                console.log(`Updated schema for ${tableName}:`, schema);
-                await statement.finalizeAsync();
+                console.log(`🔍 Verifying schema for table: ${tableName}`);
+                const result = await database.getAllAsync(`PRAGMA table_info(${tableName});`);
+                console.log(`✅ Schema for ${tableName}:`, result);
             }
 
-            console.log("Project hard reset completed successfully.");
+            console.log("🎉 Project hard reset completed successfully!");
         } catch (error) {
-            console.error("Error during hard reset:", error);
+            console.error("❌ Error during hard reset:", error);
             throw new Error("Failed to perform hard reset.");
-        } finally {
-            await disableForeignKeysStatement.finalizeAsync();
-            await enableForeignKeysStatement.finalizeAsync();
         }
     }
+
     return { create, listAllWorkouts, createWorkout, addExerciseToWorkout, getDetailedWorkout, checkWeigthHistory, saveCompletedWorkout, hardResetProject }
 }
