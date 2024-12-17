@@ -1,5 +1,5 @@
 import { useSQLiteContext } from "expo-sqlite";
-import { CreateWorkoutProps, ExerciseForWorkout, ExerciseSet } from "./types";
+import { CreateWorkoutProps, ExerciseForWorkout, ExerciseSet, Workout } from "./types";
 
 import { CompletedExercise, CompletedWorkout } from "@/services/api/types";
 import { v4 as uuidv4 } from 'uuid';
@@ -41,11 +41,11 @@ export function useWorkoutDatabase() {
      * @returns {Promise<{ results: any }>} A promise that resolves to an object containing the results of the query.
      * @throws Will throw an error if the database query fails.
      */
-    async function listAllWorkouts(): Promise<{ allWorkouts: CreateWorkoutProps[] }> {
+    async function listAllWorkouts(): Promise<{ allWorkouts: Workout[] }> {
         const statement = await database.prepareAsync("SELECT * FROM workouts");
 
         try {
-            const results = await statement.executeAsync<CreateWorkoutProps>();
+            const results = await statement.executeAsync<Workout>();
 
             const allWorkouts = await results.getAllAsync();
 

@@ -1,4 +1,4 @@
-import { CreateWorkoutProps } from "@/database/types";
+import { Workout } from "@/database/types";
 import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
@@ -10,14 +10,14 @@ import { Separator } from "../../components/Separator/Separator";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
-    const [workouts, setWorkouts] = useState<CreateWorkoutProps[]>([])
+    const [workouts, setWorkouts] = useState<Workout[]>([])
 
     const workoutDatabase = useWorkoutDatabase();
 
     const handleListAllWorkouts = async () => {
         const result = await workoutDatabase.listAllWorkouts().catch((err) => {
             Alert.alert('Error', `There was an error listing all workouts: ${err.message}`);
-            return { allWorkouts: [] as CreateWorkoutProps[] };
+            return { allWorkouts: [] as Workout[] };
         });
 
         if (result && result.allWorkouts) {
@@ -35,6 +35,8 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
         handleListAllWorkouts()
     }, [])
 
+    console.log(workouts)
+
     return (
         <PageWrapper>
             <Header navigate={navigation} actionButtonIcon="add-circle" handleClickActionButton={() => navigation.navigate('CreateWorkout')} />
@@ -44,10 +46,10 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
                 {workouts && workouts.map((workout, index) => (
                     <TouchableOpacity
                         style={styles.createdExercisesContainer}
-                        onPress={() => navigation.navigate('WorkoutDetails', { selectedWorkout: workout })}
+                        onPress={() => navigation.navigate('WorkoutDetails', { workoutId: workout.id })}
                         key={index}
                     >
-                        <Text style={styles.texts}>{workout.workout_name}</Text>
+                        <Text style={styles.texts}>{workout.name}</Text>
                         <Icon name="chevron-right" color='black' />
                     </TouchableOpacity>
 
