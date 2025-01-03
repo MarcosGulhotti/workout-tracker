@@ -1,6 +1,6 @@
-import { ExerciseForWorkout } from "@/database/types";
-import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
-import { useMemo, useState } from "react";
+import { CompletedWorkout, WorkoutDetails, WorkoutExercisesDetails } from "@/database/types";
+import { CompletedExerciseData, CompletedSetData, useWorkoutDatabase } from "@/database/useWorkoutDatabase";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
@@ -8,146 +8,115 @@ import { Separator } from "../../components/Separator/Separator";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
 import { NavigationPageProps } from "../../types/navigation";
 
-export type SavedWeights = {
-    exerciseId: string;
-    exerciseName: string;
-    sets: {
-        setNumber: string;
-        weight: string;
-        repetitions: string;
-    }[]
-}
-
-type CompletedSet = {
-    exerciseId: string;
-    setNumber: string;
-    weight: string;
-    repetitions: string;
-}
-
 export function WorkingOut({ navigation, route }: NavigationPageProps) {
-    const { selectedWorkout, lastSavedWorkout } = useMemo(() => {
-        if (route.params && 'selectedWorkout' in route.params && 'lastSavedWorkout' in route.params) {
-            return route.params;
-        }
-        return { selectedWorkout: null, lastSavedWorkout: null };
-    }, [route]);
+    const workoutId = useMemo(() => route.params ? route.params.workoutId : null, [route.params]);
 
-    if (!selectedWorkout || !selectedWorkout.exercises) {
+    if (!workoutId) {
         navigation.goBack();
         return null;
     }
-
     const workoutDatabase = useWorkoutDatabase();
 
-    const [currentExercise, setCurrentExercise] = useState<ExerciseForWorkout>(selectedWorkout.exercises[0]);
+    const [currentWorkout, setCurrentWorkout] = useState<WorkoutDetails | null>(null);
+    const [lastSavedWorkout, setLastSavedWorkout] = useState<CompletedWorkout | null>(null);
 
-    const [weights, setWeights] = useState<string[]>([]);
-    const [repetitions, setRepetitions] = useState<string[]>([]);
+    const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+    const [currentExercise, setCurrentExercise] = useState<WorkoutExercisesDetails | null>(null);
 
-    const [savedWeights, setSavedWeights] = useState<SavedWeights[]>([]);
-    const [completedSets, setCompletedSets] = useState<CompletedSet[]>([]);
+    const [savedExercises, setSavedExercises] = useState<CompletedExerciseData[]>([]);
+    const [savedSets, setSavedSets] = useState<CompletedSetData[]>([]);
 
+    const shouldBlockNextButton = useMemo(() => {
+        if (!currentWorkout || !currentExercise) return true;
+        const nextIndex = currentExerciseIndex + 1;
+        return nextIndex >= currentWorkout.exercises.length;
+    }, [currentWorkout, currentExercise, currentExerciseIndex]);
 
-    const handleNextExercise = () => {
-        if (!selectedWorkout.exercises || !currentExercise.sets) return;
-
-        // Check if all sets have weights and repetitions
-        const incompleteSets = currentExercise.sets.some((set, index) => !weights[index] || !repetitions[index]);
-        if (incompleteSets) {
-            alert("Preencha todos os pesos e repetições antes de continuar.");
+    const handleGetWorkoutDetails = useCallback(async () => {
+        if (!workoutId) return; // Type Safety
+        const workout = await workoutDatabase.getWorkoutDetails(workoutId);
+        if (!workout) {
+            navigation.goBack();
             return;
         }
+        setCurrentWorkout(workout);
+        setCurrentExercise(workout.exercises[0]);
+    }, [workoutId, workoutDatabase, navigation]);
 
-        // Construct the data for the current exercise
-        const completedSet: SavedWeights = {
-            exerciseId: currentExercise.id,
+    const handleGetHistory = useCallback(async () => {
+        if (!workoutId) return; // Type Safety
+        const lastWorkout = (await workoutDatabase.getWorkoutHistory(workoutId)).sort((a, b) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+        })[0];
+        if (!lastWorkout) return;
+
+        console.log("🚀 Completed Workouts History:", JSON.stringify(lastWorkout, null, 2));
+        setLastSavedWorkout(lastWorkout);
+    }, [workoutId, workoutDatabase]);
+
+    const handleNextExercise = useCallback(() => {
+        if (!currentWorkout || !currentExercise) return;
+
+        const nextIndex = currentExerciseIndex + 1;
+        if (nextIndex >= currentWorkout.exercises.length) {
+            return;
+        }
+        const completedExerciseSet = {
+            exerciseId: currentExercise.exercise_id,
             exerciseName: currentExercise.exercise_name,
-            sets: currentExercise.sets.map((set, index) => ({
-                setNumber: set.set_number,
-                weight: weights[index] || "0", // Default to "0" if not set
-                repetitions: repetitions[index] || "0", // Default to "0" if not set
-            })),
+            completed_sets: savedSets.map((set) => ({
+                setNumber: set.setNumber,
+                repetitions: set.repetitions,
+                weight: set.weight,
+            }))
+        }
+
+        setSavedExercises([...savedExercises, ...[completedExerciseSet]]);
+        setCurrentExerciseIndex(nextIndex);
+        setCurrentExercise(currentWorkout.exercises[nextIndex]);
+
+        setSavedSets([]);
+    }, [currentWorkout, currentExercise, currentExerciseIndex, savedSets, savedExercises]);
+
+    const handleSaveWorkout = useCallback(async () => {
+        if (!currentWorkout || !currentExercise) return;
+
+        const completedExerciseSet = {
+            exerciseId: currentExercise.exercise_id,
+            exerciseName: currentExercise.exercise_name,
+            completed_sets: savedSets.map((set) => ({
+                setNumber: set.setNumber,
+                repetitions: set.repetitions,
+                weight: set.weight,
+            }))
+        }
+
+        const completed_exercises = [...savedExercises, ...[completedExerciseSet]];
+
+        const completedWorkoutData = {
+            workout_id: currentWorkout.workout_id,
+            workout_name: currentWorkout.workout_name,
+            date: new Date().toISOString(),
+            completed_exercises
         };
 
-        // Append the current exercise data to `savedWeights`
-        setSavedWeights((prev) => [...prev, completedSet]);
+        console.log("🚀 Completed Workout Data:", JSON.stringify(completedWorkoutData, null, 2));
 
-        // Determine the next exercise
-        const nextExerciseIndex = selectedWorkout.exercises.findIndex((e) => e.id === currentExercise.id) + 1;
-        if (nextExerciseIndex < selectedWorkout.exercises.length) {
-            setCurrentExercise(selectedWorkout.exercises[nextExerciseIndex]);
-            setWeights([]); // Clear inputs for the next exercise
-            setRepetitions([]);
-        } else {
-            alert("Treino completo! Não se esqueça de salvar.");
-        }
-    };
+        await workoutDatabase.saveCompletedWorkout(completedWorkoutData);
+        navigation.goBack();
+    }, [savedSets, savedExercises, currentWorkout, currentExercise]);
 
-    const handleSaveWorkout = async () => {
-        try {
-            if (!selectedWorkout.exercises || !currentExercise.sets) return;
-    
-            // Local variable to store the updated savedWeights
-            let updatedSavedWeights = [...savedWeights];
-    
-            // Check if the current exercise is the last one and needs to be added
-            if (!updatedSavedWeights.find((exercise) => exercise.exerciseId === currentExercise.id)) {
-                const incompleteSets = currentExercise.sets.some((set, index) => !weights[index] || !repetitions[index]);
-                if (incompleteSets) {
-                    alert("Preencha todos os pesos e repetições antes de salvar.");
-                    return;
-                }
-    
-                // Add the current exercise to the updated savedWeights
-                const completedSet: SavedWeights = {
-                    exerciseId: currentExercise.id,
-                    exerciseName: currentExercise.exercise_name,
-                    sets: currentExercise.sets.map((set, index) => ({
-                        setNumber: set.set_number,
-                        weight: weights[index] || "0",
-                        repetitions: repetitions[index] || "0",
-                    })),
-                };
-    
-                updatedSavedWeights = [...updatedSavedWeights, completedSet];
-            }
-    
-            console.log("Updated savedWeights before save:", updatedSavedWeights);
-    
-            // Prepare the final object to pass to saveCompletedWorkout
-            const workoutData = {
-                workout_id: selectedWorkout.id,
-                workoutName: selectedWorkout.workout_name,
-                date: new Date().toISOString(),
-                savedWeights: updatedSavedWeights.map((exercise) => ({
-                    exerciseId: exercise.exerciseId,
-                    exerciseName: exercise.exerciseName,
-                    sets: exercise.sets.map((set) => ({
-                        setNumber: set.setNumber,
-                        repetitions: set.repetitions.toString(),
-                        weight: set.weight.toString(),
-                    })),
-                })),
-            };
-    
-            // Call the save function
-            await workoutDatabase.saveCompletedWorkout(workoutData);
-    
-            alert("Treino salvo com sucesso!");
-            // navigation.navigate("WorkoutHistory");
-        } catch (error) {
-            console.error("Erro ao salvar o treino:", error);
-            alert("Ocorreu um erro ao salvar o treino. Tente novamente.");
-        }
-    };
-    
+    useEffect(() => {
+        if (currentWorkout) return;
 
+        handleGetWorkoutDetails();
+        handleGetHistory();
+    }, [currentWorkout, handleGetWorkoutDetails, handleGetHistory]);
 
     return (
         <PageWrapper>
             <Header navigate={navigation} />
-            <Separator text={selectedWorkout?.workout_name ?? ''} />
+            <Separator text={currentWorkout?.workout_name ?? ''} />
 
             <KeyboardAvoidingView
                 style={styles.container}
@@ -155,64 +124,91 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
                 keyboardVerticalOffset={0}
             >
                 <ScrollView style={styles.container}>
-                    <Text style={styles.title}>Exercise: {currentExercise.exercise_name}</Text>
+                    <Text style={styles.title}>Exercise: {currentWorkout?.exercises[currentExerciseIndex].exercise_name}</Text>
 
                     <View style={styles.repInputContainer}>
-                        {currentExercise.sets?.map((set, index) => {
-                            const lastSavedSet = lastSavedWorkout?.completed_exercises
-                                ?.find((e) => String(e.completed_exercise_id) === currentExercise.id)
-                                ?.completed_sets.find((s) => Number(s.set_number) === Number(set.set_number));
+                        {
+                            currentExercise?.sets?.map((set, index) => {
+                                return (
+                                    <View key={index}>
+                                        <Text>Set {set.set_number} - {set.repetitions} Reps</Text>
+                                        <View style={styles.setsContainer}>
+                                            <Text>Reps</Text>
+                                            <TextInput
+                                                style={styles.repInput}
+                                                keyboardType="number-pad"
+                                                placeholder={`${set.repetitions}`}
+                                                onChangeText={(value) => {
+                                                    const currentEditedSet = savedSets.filter((editedSet) => editedSet.setNumber === String(set.set_number));
+                                                    const updatedSets = savedSets.filter((s) => s.setNumber !== String(set.set_number));
 
-                            return (
-                                <View key={index}>
-                                    <Text>Set {set.set_number}</Text>
-                                    <View style={styles.setsContainer}>
-                                        <Text>Repetições</Text>
-                                        <TextInput
-                                            style={styles.repInput}
-                                            keyboardType="number-pad"
-                                            placeholder={`${lastSavedSet ? lastSavedSet.repetitions : set.repetitions}`}
-                                            value={repetitions[index]}
-                                            onChangeText={(text) => {
-                                                const updatedRepetitions = [...repetitions];
-                                                updatedRepetitions[index] = text;
-                                                setRepetitions(updatedRepetitions);
-                                            }}
-                                        />
-                                        <Text>Peso</Text>
-                                        <TextInput
-                                            style={styles.repInput}
-                                            keyboardType="number-pad"
-                                            placeholder={`${lastSavedSet ? lastSavedSet.weight : set.weight}`}
-                                            value={weights[index]}
-                                            onChangeText={(text) => {
-                                                const updatedWeights = [...weights];
-                                                updatedWeights[index] = text;
-                                                setWeights(updatedWeights);
-                                            }}
-                                        />
+                                                    if (currentEditedSet.length > 0) {
+                                                        setSavedSets([
+                                                            ...updatedSets, {
+                                                                repetitions: value,
+                                                                setNumber: String(set.set_number),
+                                                                weight: currentEditedSet[0].weight
+                                                            }])
+                                                    } else {
+                                                        setSavedSets([
+                                                            ...updatedSets, {
+                                                                repetitions: value,
+                                                                setNumber: String(set.set_number),
+                                                                weight: ''
+                                                            }])
+                                                    }
+                                                }
+                                                }
+                                            />
+                                            <Text>Weight</Text>
+                                            <TextInput
+                                                style={styles.repInput}
+                                                keyboardType="number-pad"
+                                                placeholder="Weight"
+                                                onChangeText={(value) => {
+                                                    const currentEditedSet = savedSets.filter((editedSet) => editedSet.setNumber === String(set.set_number));
+                                                    const updatedSets = savedSets.filter((s) => s.setNumber !== String(set.set_number));
+
+                                                    if (currentEditedSet.length > 0) {
+                                                        setSavedSets([
+                                                            ...updatedSets, {
+                                                                repetitions: currentEditedSet[0].repetitions,
+                                                                setNumber: String(set.set_number),
+                                                                weight: value
+                                                            }])
+                                                    } else {
+                                                        setSavedSets([
+                                                            ...savedSets, {
+                                                                repetitions: String(set.repetitions),
+                                                                setNumber: String(set.set_number),
+                                                                weight: value
+                                                            }])
+                                                    }
+                                                }
+                                                }
+                                            />
+                                        </View>
                                     </View>
-                                </View>
-                            );
-                        })}
+                                );
+                            })
+                        }
                     </View>
                 </ScrollView>
 
                 <View style={styles.buttonsContainer}>
-                    <StyledButton
-                        customStyles={{ height: 45, margin: 10 }}
-                        text="Next"
-                        onPress={handleNextExercise}
-                        disabled={currentExercise.id === selectedWorkout.exercises[selectedWorkout.exercises.length - 1].id}
-                    />
-
-                    {currentExercise.id === selectedWorkout.exercises[selectedWorkout.exercises.length - 1].id && (
+                    {shouldBlockNextButton ? (
                         <StyledButton
                             customStyles={{ height: 45, margin: 10 }}
                             text="SAVE"
                             onPress={handleSaveWorkout}
                         />
-                    )}
+                    )
+                        : <StyledButton
+                            customStyles={{ height: 45, margin: 10 }}
+                            text="Next"
+                            onPress={handleNextExercise}
+                            disabled={shouldBlockNextButton}
+                        />}
                 </View>
 
             </KeyboardAvoidingView>
@@ -267,15 +263,3 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     }
 })
-
-
-/**
- * 1 - Usuario vai entrar na página e será verificado se ele tem historico nesse treino
- * 2 - Se tiver, os pesos do ultimo treino serão preenchidos automaticamente
- * 3 - O usuário vai preencher os pesos e repetições do treino atual
- * 4 - Ao clicar em next, os pesos e repetições serão salvos e o próximo exercício será carregado
- * 5 - O usuário vai preencher os pesos e repetições do próximo exercício
- * 6 - O processo se repete até o último exercício
- * 7 - Ao clicar em save, o treino completo será salvo no banco de dados
- * 8 - O usuário será redirecionado para a tela de histórico
- */

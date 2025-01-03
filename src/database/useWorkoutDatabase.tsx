@@ -1,6 +1,24 @@
 import { useSQLiteContext } from "expo-sqlite";
 import { CompletedExercise, CompletedSet, CompletedWorkout, CreateWorkoutProps, Exercise, Set, Workout, WorkoutDetails } from "./types";
 
+export type CompletedSetData = {
+    setNumber: string;
+    weight: string;
+    repetitions: string;
+}
+
+export type CompletedExerciseData = {
+    exerciseId: string;
+    exerciseName: string;
+    completed_sets: CompletedSetData[];
+}
+
+export type CompletedWorkoutData = {
+    workout_id: string;
+    workout_name: string;
+    date: string;
+    completed_exercises: CompletedExerciseData[];
+}
 
 /**
  * Querys precisam ser nesse modelo de agora em diante
@@ -90,7 +108,7 @@ export function useWorkoutDatabase() {
             // Construindo a resposta final
             const workoutDetails: WorkoutDetails = {
                 workout_id: workout.id,
-                workout_name: workout.name,
+                workout_name: workout.workout_name,
                 exercises: exercisesWithSets,
             };
 
@@ -273,73 +291,70 @@ export function useWorkoutDatabase() {
     }
 
 
-    const saveCompletedWorkout = async ({
-        workout_id,
-        workoutName,
-        date,
-        savedWeights,
-    }: {
-        workout_id: string;
-        workoutName: string;
-        date: string;
-        savedWeights: {
-            exerciseId: string;
-            exerciseName: string;
-            sets: { setNumber: string; repetitions: string; weight: string }[];
-        }[];
-    }): Promise<void> => {
-        const workoutStatement = await database.prepareAsync(
-            "INSERT INTO completed_workouts (workout_id, workout_name, date) VALUES ($workout_id, $workout_name, $date)"
-        );
-
+    async function saveCompletedWorkout(
+        workoutData: CompletedWorkoutData
+    ): Promise<void> {
         try {
-            // Insert the workout
-            await workoutStatement.executeAsync({
-                $workout_id: workout_id,
-                $workout_name: workoutName,
-                $date: date,
+            console.log("🚀 Starting to save completed workout...");
+    
+            // 1️⃣ Salvar o Workout Completo
+            const completedWorkoutQuery = `
+                INSERT INTO completed_workouts (workout_id, workout_name, date)
+                VALUES ($workout_id, $workout_name, $date);
+            `;
+            const workoutStatement = await database.prepareAsync(completedWorkoutQuery);
+            const workoutResult = await workoutStatement.executeAsync({
+                $workout_id: workoutData.workout_id,
+                $workout_name: workoutData.workout_name,
+                $date: workoutData.date,
             });
-
-            // Loop through exercises
-            for (const { exerciseName, sets, exerciseId } of savedWeights) {
-                const exerciseStatement = await database.prepareAsync(
-                    "INSERT INTO completed_exercises (completed_workout_id, exercise_name, completed_exercise_id) VALUES ($workout_id, $exercise_name, $completed_exercise_id)"
-                );
-
-                await exerciseStatement.executeAsync({
-                    $workout_id: workout_id, // Associate with the workout
-                    $exercise_name: exerciseName,
-                    $completed_exercise_id: exerciseId
+    
+            const completedWorkoutId = workoutResult.lastInsertRowId;
+            console.log("✅ Completed workout saved with ID:", completedWorkoutId);
+    
+            // 2️⃣ Salvar os Exercícios Concluídos
+            for (const exercise of workoutData.completed_exercises) {
+                const completedExerciseQuery = `
+                    INSERT INTO completed_exercises (completed_workout_id, name)
+                    VALUES ($completed_workout_id, $name);
+                `;
+                const exerciseStatement = await database.prepareAsync(completedExerciseQuery);
+                const exerciseResult = await exerciseStatement.executeAsync({
+                    $completed_workout_id: completedWorkoutId,
+                    $name: exercise.exerciseName,
                 });
-
-                console.log("Exercise ID:", exerciseId);
-
-                // Loop through sets for the current exercise
-                for (const { setNumber, repetitions, weight } of sets) {
-                    const setStatement = await database.prepareAsync(
-                        "INSERT INTO completed_sets (completed_exercise_id, set_number, repetitions, weight) VALUES ($exercise_id, $set_number, $repetitions, $weight)"
-                    );
-
+    
+                const completedExerciseId = exerciseResult.lastInsertRowId;
+                console.log("✅ Completed exercise saved with ID:", completedExerciseId);
+    
+                // 3️⃣ Salvar os Sets de Cada Exercício
+                for (const set of exercise.completed_sets) {
+                    const completedSetQuery = `
+                        INSERT INTO completed_sets (completed_exercise_id, set_number, weight, repetitions)
+                        VALUES ($completed_exercise_id, $set_number, $weight, $repetitions);
+                    `;
+                    const setStatement = await database.prepareAsync(completedSetQuery);
                     await setStatement.executeAsync({
-                        $exercise_id: exerciseId, // Associate with the exercise
-                        $set_number: setNumber,
-                        $repetitions: Number(repetitions),
-                        $weight: Number(weight),
+                        $completed_exercise_id: completedExerciseId,
+                        $set_number: set.setNumber,
+                        $weight: set.weight,
+                        $repetitions: set.repetitions,
                     });
-
+    
+                    console.log(`✅ Set ${set.setNumber} saved for exercise ID: ${completedExerciseId}`);
                     await setStatement.finalizeAsync();
                 }
-
+    
                 await exerciseStatement.finalizeAsync();
             }
-        } catch (error) {
-            console.error("Error saving completed workout:", error);
-            throw new Error("Failed to save the completed workout");
-        } finally {
+    
+            console.log("🎉 Completed workout saved successfully!");
             await workoutStatement.finalizeAsync();
+        } catch (error) {
+            console.error("❌ Error saving completed workout:", error);
+            throw error;
         }
-    };
-
+    }
     async function hardResetProject() {
         console.log("🚧 Resetting database...");
 

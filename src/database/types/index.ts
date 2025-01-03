@@ -13,7 +13,7 @@ export type ExerciseForWorkout = {
 
 export type Workout = {
     id: string;
-    name: string;
+    workout_name: string;
     exercises?: Exercise[];
 }
 
@@ -36,14 +36,14 @@ export type CompletedWorkout = {
     workout_name: string;
     workout_id: number;
     date: string;
-    completed_exercises?: CompletedExercise[];
+    completed_exercises: CompletedExercise[];
 }
 
 export type CompletedExercise = {
     id: string;
     completed_workout_id: number;
     name: string;
-    completed_sets?: CompletedSet[];
+    completed_sets: CompletedSet[];
 }
 
 export type CompletedSet = {
@@ -67,12 +67,14 @@ export type CreateExerciseProps = {
     }[]
 }
 
+export type WorkoutExercisesDetails = {
+    exercise_id: string;
+    exercise_name: string;
+    sets: Set[];
+};
+
 export type WorkoutDetails = {
     workout_id: string;
     workout_name: string;
-    exercises: {
-        exercise_id: string;
-        exercise_name: string;
-        sets: Set[];
-    }[];
+    exercises: WorkoutExercisesDetails[];
 };
