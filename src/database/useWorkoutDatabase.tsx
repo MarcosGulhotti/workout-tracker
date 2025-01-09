@@ -403,6 +403,31 @@ export function useWorkoutDatabase() {
         console.log("🎉 Database reset completed.");
     }
 
+    // This function is used to check if there are any workouts in the database and if there are any completed workouts
+    async function checkWorkoutsAndHistory(){
+        const statement = await database.prepareAsync("SELECT * FROM workouts");
+        const statement2 = await database.prepareAsync("SELECT * FROM completed_workouts");
+
+        try {
+            const results = await statement.executeAsync<Workout>();
+            const results2 = await statement2.executeAsync<CompletedWorkout>();
+
+            const allWorkouts = await results.getAllAsync();
+            const allCompletedWorkouts = await results2.getAllAsync();
+
+            if (allWorkouts.length === 0 && allCompletedWorkouts.length === 0) {
+                return { hasWorkoutsOrHistory: false };
+            }
+
+            return { hasWorkoutsOrHistory: true };
+        } catch (error) {
+            throw new Error(String(error));
+        } finally {
+            await statement.finalizeAsync();
+            await statement2.finalizeAsync();
+        }
+    }
+
     return {
         listAllWorkouts,
         createWorkout,
@@ -410,6 +435,7 @@ export function useWorkoutDatabase() {
         saveCompletedWorkout,
         deleteWorkout,
         hardResetProject,
-        getWorkoutHistory
+        getWorkoutHistory,
+        checkWorkoutsAndHistory
     }
 }
