@@ -38,7 +38,7 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
     console.log(workouts)
 
     return (
-        <PageWrapper>
+        <PageWrapper navigate={navigation} selectedButton='ListAllWorkouts'>
             <Header navigate={navigation} actionButtonIcon="add-circle" handleClickActionButton={() => navigation.navigate('CreateWorkout')} />
             <Separator text="Workouts" />
 
@@ -49,7 +49,7 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
                         onPress={() => navigation.navigate('WorkoutDetails', { workoutId: workout.id })}
                         key={index}
                     >
-                        <Text style={styles.texts}>{workout.name}</Text>
+                        <Text style={styles.texts}>{workout.workout_name}</Text>
                         <Icon name="chevron-right" color='black' />
                     </TouchableOpacity>
 

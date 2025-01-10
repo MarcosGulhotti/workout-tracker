@@ -1,4 +1,3 @@
-import { NavBar } from '@/components/NavBar/NavBar';
 import { useWorkoutDatabase } from '@/database/useWorkoutDatabase';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
@@ -32,7 +31,7 @@ export function Home({ navigation }: NavigationPageProps) {
 
 
     return (
-        <PageWrapper>
+        <PageWrapper navigate={navigation} selectedButton='Home'>
             <Header navigate={navigation} />
             <View style={{ flex: 1 }}>
                 {loading && <View><Text>Loading...</Text></View>}
@@ -49,7 +48,6 @@ export function Home({ navigation }: NavigationPageProps) {
 
                 {/* <StyledButton text='RESET' onPress={workoutDatabase.hardResetProject} customStyles={{ margin: 10, height: 40 }} /> */}
             </View>
-            <NavBar />
         </PageWrapper>
     );
 }

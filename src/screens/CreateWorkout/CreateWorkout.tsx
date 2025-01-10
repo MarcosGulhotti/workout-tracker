@@ -58,7 +58,7 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
     }
 
     return (
-        <PageWrapper>
+        <PageWrapper navigate={navigation} selectedButton='CreateWorkout'>
             <Header navigate={navigation} />
 
             <Separator text='Create Workout' />

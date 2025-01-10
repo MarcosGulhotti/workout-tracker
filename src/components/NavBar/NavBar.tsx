@@ -1,48 +1,45 @@
-import { useState } from "react";
+import { NavigationOptions } from "@/screens";
 import { StyleSheet, View } from "react-native";
 import { Icon } from "react-native-elements";
 
 type NavBarProps = {
-    selectedButton?: number;
-    handleNavigate?: (ind: number) => void;
+    selectedButton: NavigationOptions;
+    handleNavigate?: (option: NavigationOptions) => void;
 };
 
-export function NavBar({ handleNavigate, selectedButton = 1 }: NavBarProps) {
-    const [selected, setSelected] = useState(selectedButton);
-
-    const handlePress = (index: number) => {
-        setSelected(index);
+export function NavBar({ handleNavigate, selectedButton }: NavBarProps) {
+    const handlePress = (index: NavigationOptions) => {
         handleNavigate && handleNavigate(index);
     };
 
     return (
         <View style={styles.container}>
-            <View style={selected === 0 ? styles.selectedIcon : styles.iconContainer}>
+            <View style={selectedButton === 'CreateWorkout' ? styles.selectedIcon : styles.iconContainer}>
                 <Icon
                     name="add-circle-outline"
                     color="#FFFFFF"
                     size={50}
-                    onPress={() => handlePress(0)}
+                    onPress={() => handlePress('CreateWorkout')}
                     accessible
                     accessibilityLabel="Add"
                 />
             </View>
-            <View style={selected === 1 ? styles.selectedIcon : styles.iconContainer}>
+            <View style={selectedButton === 'Home' ? styles.selectedIcon : styles.iconContainer}>
                 <Icon
                     name="home"
                     color="#FFFFFF"
                     size={50}
-                    onPress={() => handlePress(1)}
+                    onPress={() => handlePress('Home')}
                     accessible
                     accessibilityLabel="Home"
                 />
             </View>
-            <View style={selected === 2 ? styles.selectedIcon : styles.iconContainer}>
+            <View style={selectedButton === 'ListAllWorkouts' ? styles.selectedIcon : styles.iconContainer}>
                 <Icon
                     name="list"
                     color="#FFFFFF"
                     size={50}
-                    onPress={() => handlePress(2)}
+                    onPress={() => handlePress('ListAllWorkouts')}
                     accessible
                     accessibilityLabel="List"
                 />
