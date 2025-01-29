@@ -13,25 +13,24 @@ export type WorkoutDetails = {
 };
 
 export type CompletedWorkout = {
-    id: number;
+    workout_id: string;
     workout_name: string;
     date: string;
     completed_exercises: CompletedExercise[];
 };
 
 export type CompletedExercise = {
-    id: number;
-    completed_workout_id: number;
+    completed_workout_id: string;
+    completed_exercise_id: string;
     exercise_name: string;
     completed_sets: CompletedSets[];
 };
 
-type CompletedSets = {
-    id: number;
-    completed_exercise_id: number;
-    set_number: number;
-    repetitions: number;
-    weight: number;
+export type CompletedSets = {
+    completed_exercise_id: string;
+    set_number: string;
+    repetitions: string;
+    weight: string;
     observation?: string;
 }
 

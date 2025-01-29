@@ -1,94 +1,55 @@
+import { useWorkoutDatabase } from '@/database/useWorkoutDatabase';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Header } from '../../components/Header/Header';
 import { PageWrapper } from '../../components/PageWrapper/PageWrapper';
-import { Separator } from '../../components/Separator/Separator';
-import { StyledButton } from '../../components/StyledButton/StyledButton';
 import { WorkoutDetails } from '../../services/api/types';
-import { getWorkoutOfTheDay, hardResetProject } from '../../services/api/workoutClient';
 import { NavigationPageProps } from '../../types/navigation';
 
 export function Home({ navigation }: NavigationPageProps) {
     const [workoutOfTheDay, setWorkoutOfTheDay] = useState<WorkoutDetails | null>(null)
+    const [loading, setLoading] = useState(true);
+    const [shouldShowNoWorkoutImage, setShouldShowNoWorkoutImage] = useState(false);
 
-    const handleGetWorkoutOfTheDay = useCallback(async () => {
-        const workout = await getWorkoutOfTheDay()
+    const workoutDatabase = useWorkoutDatabase();
 
-        setWorkoutOfTheDay(workout);
-    }, [])
+    const checkIfUserHasData = useCallback(async () => {
+        const { hasWorkoutsOrHistory } = await workoutDatabase.checkWorkoutsAndHistory();
+
+        setShouldShowNoWorkoutImage(hasWorkoutsOrHistory);
+        setLoading(false);
+    }, [workoutDatabase, loading, shouldShowNoWorkoutImage])
+
 
     useEffect(() => {
-        handleGetWorkoutOfTheDay()
+        if (loading) {
+            checkIfUserHasData()
+        }
     }, [])
 
+    console.log('hasWorkoutsOrHistory', shouldShowNoWorkoutImage);
+
+
     return (
-        <PageWrapper>
-            <Header navigate={navigation} showAddButton />
-            <ScrollView>
-                {workoutOfTheDay &&
-                    <View>
-                        <Separator text='Quick Start' />
-                        <StyledButton
-                            text={`Start Workout: ${workoutOfTheDay.workout_name}`}
-                            customStyles={{ marginHorizontal: 10, height: 40 }}
+        <PageWrapper navigate={navigation} selectedButton='Home'>
+            <Header navigate={navigation} />
+            <View style={{ flex: 1 }}>
+                {loading && <View><Text>Loading...</Text></View>}
+
+                {shouldShowNoWorkoutImage && (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <Image
+                            style={{ width: '100%', height: 150, resizeMode: 'contain' }}
+                            source={require('../../assets/images/noWorkouts.jpg')}
                         />
+                        <Text style={{ color: '#3F3D56', fontSize: 22, textAlign: 'center', fontFamily: 'BebasNeue' }}>You don't have any workouts yet.</Text>
                     </View>
-                }
-                <Separator text='Workouts' />
+                )}
 
-                <View style={styles.buttonsContainer}>
-                    <StyledButton
-                        showIcon
-                        iconName='assignment'
-                        text='New Workout'
-                        customStyles={{ marginHorizontal: 10, height: 40 }}
-                        onPress={() => navigation.navigate('CreateWorkout')}
-                    />
-                    <StyledButton
-                        showIcon
-                        iconName='search'
-                        text='All Workouts'
-                        customStyles={{ marginHorizontal: 10, height: 40 }}
-                        onPress={() => navigation.navigate('ListAllWorkouts')}
-                    />
-                </View>
-
-                <StyledButton text='RESET' onPress={hardResetProject} customStyles={{ margin: 10, height: 40 }} />
-            </ScrollView>
+                {/* <StyledButton text='RESET' onPress={workoutDatabase.hardResetProject} customStyles={{ margin: 10, height: 40 }} /> */}
+            </View>
         </PageWrapper>
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    outsideContainer: {
-        backgroundColor: '#34495E'
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: 'black',
-        padding: 10,
-        margin: 10,
-    },
-    selectWorkout: {
-        borderWidth: 1,
-        borderColor: 'black',
-        padding: 10,
-        margin: 10,
-    },
-    selectedWorkout: {
-        borderWidth: 1,
-        borderColor: 'black',
-        padding: 10,
-        margin: 10,
-        backgroundColor: 'grey',
-    },
-    buttonsContainer: {
-        display: 'flex',
-        flexDirection: 'row',
-        alignSelf: 'center',
-        width: '95%',
-    },
-});
+const styles = StyleSheet.create({});

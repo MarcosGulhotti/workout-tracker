@@ -1,7 +1,6 @@
-import { useEffect } from 'react';
+import { useFonts } from 'expo-font';
 import { View } from 'react-native';
 import { Router } from './src/screens';
-import { setUpDatabase } from './src/services/api/workoutClient';
 
 /**
  * The main entry point of the application.
@@ -9,10 +8,11 @@ import { setUpDatabase } from './src/services/api/workoutClient';
  * @returns {JSX.Element} The root view of the application.
  */
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'Montserrat-Bold': require('./assets/fonts/Montserrat.ttf'),
+  });
 
-  useEffect(() => {
-    setUpDatabase();
-  }, [])
+  console.log(fontsLoaded)
 
   return (
     <View style={{ flex: 1 }}>

@@ -1,12 +1,13 @@
+import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useMemo, useState } from "react";
-import { Keyboard, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Header } from "../../components/Header/Header";
 import { LabeledTextInput } from "../../components/LabeledTextInput/LabeledTextInput";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
+import { SetsInput } from "../../components/SetsInput/SetsInput";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
 import { ExerciseSet } from "../../services/api/types";
-import { addExerciseToWorkout } from "../../services/api/workoutClient";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function CreateExercises({ navigation, route }: NavigationPageProps) {
@@ -19,13 +20,17 @@ export function CreateExercises({ navigation, route }: NavigationPageProps) {
 
     const selectedWorkout = useMemo(() => route.params ? route.params.selectedWorkout : null, [route]);
 
+    const workoutDatabase = useWorkoutDatabase();
+
     const handleSaveExercises = async () => {
         if (!selectedWorkout) {
             return;
         }
 
         savedExercises.forEach(async (elm) => {
-            await addExerciseToWorkout(selectedWorkout.id, elm.exerciseName, elm.sets);
+            const exercises = workoutDatabase.addExerciseToWorkout(selectedWorkout.id, elm.exerciseName, elm.sets);
+            console.log(exercises);
+            // await addExerciseToWorkout(selectedWorkout.id, elm.exerciseName, elm.sets);
         })
 
         setReps([]);
@@ -66,51 +71,55 @@ export function CreateExercises({ navigation, route }: NavigationPageProps) {
 
             <Separator text={selectedWorkout?.workout_name ?? 'Create Exercises'} />
 
-            <ScrollView style={styles.content}>
-                <LabeledTextInput
-                    label="Exercise Name"
-                    placeholder="Enter exercise name"
-                    value={exerciseName}
-                    onChangeText={setExerciseName}
-                />
-
-                <LabeledTextInput
-                    label="Number of Sets"
-                    placeholder="Enter number of sets"
-                    value={numberOfSets}
-                    onChangeText={setNumberOfSets}
-                    type="number-pad"
-                    onSubmitEditing={() => Keyboard.dismiss}
-                />
-
-                {numberOfSets && [...Array(parseInt(numberOfSets))].map((set, index) => (
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}
+            >
+                <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 0 }}>
                     <LabeledTextInput
-                        key={index}
-                        label={`Set ${index + 1}`}
-                        placeholder={`Enter number of reps for set ${index + 1}`}
-                        type="number-pad"
-                        value={reps[index]}
-                        onChangeText={text => {
-                            const newReps = [...reps];
-                            newReps[index] = text;
-                            setReps(newReps);
-                        }}
-                        onSubmitEditing={() => Keyboard.dismiss}
+                        label="Exercise Name"
+                        placeholder="Enter exercise name"
+                        value={exerciseName}
+                        onChangeText={setExerciseName}
                     />
-                ))}
 
-                {savedExercises.length > 0 && <Separator text="Created Exercises" />}
+                    <LabeledTextInput
+                        label="Number of Sets"
+                        placeholder="Enter number of sets"
+                        value={String(numberOfSets)}
+                        onChangeText={(text) => {
+                            if (Number(text) < 100) {
+                                setNumberOfSets(text)
+                            }
+                        }}
+                        type="number-pad"
+                        onSubmitEditing={Keyboard.dismiss}
+                    />
 
-                {savedExercises.length > 0 && (
-                    savedExercises.map((exercise) =>
-                        <View style={{ marginVertical: 10 }}>
-                            <Text>{exercise.exerciseName}</Text>
-                            <View style={styles.createdExercisesContainer}>
-                                {exercise.sets.map((sets, ind) => <Text>1x{sets.repetitions} {ind < exercise.sets.length - 1 && ', '}</Text>)}
+                    <SetsInput
+                        reps={reps}
+                        setNewReps={setReps}
+                        sets={Number(numberOfSets)}
+                    />
+
+                    {savedExercises.length > 0 && <Separator text="Created Exercises" />}
+
+                    {savedExercises.length > 0 && (
+                        savedExercises.map((exercise, index) => (
+                            <View style={styles.createdExercisesContainer} key={index}>
+                                <Text style={styles.texts}>{exercise.exerciseName}:</Text>
+                                <View style={styles.setsContainer}>
+                                    {exercise.sets.map((set, index) => (
+                                        <View style={styles.setsTextContainer}>
+                                            <Text style={styles.setsText} key={index}>{`Set ${set.set_number}: ${set.repetitions} reps`}</Text>
+                                        </View>
+                                    ))}
+                                </View>
                             </View>
-                        </View>
-                    )
-                )}
+                        ))
+                    )}
+                </ScrollView>
 
                 <View style={styles.buttonsContainer}>
                     <StyledButton
@@ -119,33 +128,62 @@ export function CreateExercises({ navigation, route }: NavigationPageProps) {
                         customStyles={{ marginHorizontal: 10, height: 40 }}
                         disabled={exerciseName.length === 0}
                     />
-                    <StyledButton //TODO - ADD MODAL VALIDATION TO FINISH IF THERE IS A EXERCISE BEING CREATED, EXERCISE WILL NOT BE SAVED IF USER DONT USE ADD BUTTON.
+                    <StyledButton
                         text="Finish"
                         onPress={() => handleSaveExercises()}
                         customStyles={{ marginHorizontal: 10, height: 40 }}
                         disabled={exerciseName.length > 0 || reps.length > 0}
                     />
                 </View>
-            </ScrollView>
+            </KeyboardAvoidingView>
         </PageWrapper>
     )
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
     content: {
+        flexGrow: 1,
         width: '90%',
-        alignSelf: 'center'
+        alignSelf: 'center',
     },
     createdExercisesContainer: {
-        display: 'flex',
         flexDirection: 'row',
-        marginTop: 5
+        marginTop: 5,
+        flexWrap: 'wrap',
     },
-    title: {},
     buttonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+    setsContainer: {
         display: 'flex',
         flexDirection: 'row',
-        alignSelf: 'center',
-        width: '95%',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        paddingVertical: 5,
+    },
+    setsText: {
+        fontFamily: 'Roboto',
+        color: '#34495E',
+    },
+    setsTextContainer: {
+        borderWidth: 1,
+        borderRadius: 10,
+        padding: 5,
+        paddingVertical: 10,
+        margin: 5,
+        width: 100,
+        alignItems: 'center',
+    },
+    texts: {
+        fontFamily: 'Roboto',
+        fontSize: 18,
+        color: '#34495E',
+        fontWeight: 'bold',
     },
 });

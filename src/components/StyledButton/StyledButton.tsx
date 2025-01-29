@@ -8,15 +8,17 @@ type StyledButtonProps = {
     showIcon?: boolean;
     iconName?: string;
     disabled?: boolean;
+    customIcon?: string;
+    customIconColor?: string;
 }
 
-export function StyledButton({ text, onPress, customStyles, showIcon, iconName, disabled }: StyledButtonProps) {
+export function StyledButton({ text, onPress, customStyles, showIcon, iconName, disabled, customIcon, customIconColor }: StyledButtonProps) {
     return (
         <TouchableOpacity style={{ ...styles.styledButton, ...customStyles }} onPress={onPress} disabled={disabled}>
             <View style={styles.styledContent}>
                 {(showIcon && iconName) && <Icon name={iconName} size={15} />}
                 <Text>{text}</Text>
-                <Icon name='navigate-next' color='#1ABC9C' />
+                <Icon name={customIcon ?? 'navigate-next'} color={customIconColor ?? '#1ABC9C'} />
             </View>
         </TouchableOpacity>
     )

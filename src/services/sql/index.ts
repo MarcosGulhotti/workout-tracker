@@ -7,5 +7,6 @@ export * from './CreateTables/CreateSetsTable';
 export * from './CreateTables/CreateWorkoutTable';
 export * from './DropAllTables';
 export * from './List/ListAllWorkouts';
+export * from './Update/AddExerciseToWorkout';
 export * from './Update/CreateWorkout';
 

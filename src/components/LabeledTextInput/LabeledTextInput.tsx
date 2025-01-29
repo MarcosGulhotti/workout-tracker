@@ -1,5 +1,6 @@
 import React from 'react';
-import { KeyboardTypeOptions, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardTypeOptions, StyleSheet, Text, View } from 'react-native';
+import { Input } from '../Input/Input';
 
 interface LabeledTextInputProps {
   label: string;
@@ -25,7 +26,7 @@ export function LabeledTextInput({
   return (
     <View style={[styles.container, style]}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput
+      <Input
         style={styles.input}
         value={value}
         onChangeText={onChangeText}
@@ -34,6 +35,7 @@ export function LabeledTextInput({
         keyboardType={type}
         onSubmitEditing={onSubmitEditing}
         onEndEditing={onSubmitEditing}
+        getValue={() => Promise.resolve(value)}
       />
     </View>
   );

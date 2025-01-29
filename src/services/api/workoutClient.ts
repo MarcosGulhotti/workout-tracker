@@ -1,13 +1,10 @@
 import { getDay } from 'date-fns';
-import * as SQLite from 'expo-sqlite/legacy';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import { useDataBase } from '../../hooks/useDatabase';
 import { CreateCardioTable, CreateCompletedExercisesTable, CreateCompletedSetsTable, CreateCompletedWorkoutsTable, CreateExercisesTable, CreateSetsTable, CreateWorkout, CreateWorkoutTable, DropAllTables } from '../sql';
 import { AddExerciseToWorkout } from '../sql/Update/AddExerciseToWorkout';
+import { useDataBase } from './hooks/useDatabase';
 import { Exercise, ExerciseSet, WorkoutDetails } from './types';
-
-const database = SQLite.openDatabase('workout_database');
 
 const { executeSql, executeSqlBatch } = useDataBase();
 
@@ -132,7 +129,7 @@ export function addExerciseToWorkout(
     sets: ExerciseSet[]
 ) {
     const newExerciseId = uuidv4(); // Generate a UUID for the new exercise
-
+    //@ts-ignore
     executeSql(AddExerciseToWorkout, [newExerciseId, workout_id, exercise_name],
         async (_, result) => {
             console.log('Exercise inserted successfully', result);
@@ -142,6 +139,7 @@ export function addExerciseToWorkout(
                 sets.forEach(set => {
                     executeSql(
                         `INSERT INTO sets (id, exercise_id, set_number, repetitions, weight) VALUES (?, ?, ?, ?, ?);`,
+                        //@ts-ignore
                         [uuidv4(), newExerciseId, Number(set.set_number), Number(set.repetitions), String(set.weight)],
                         (_, result) => {
                             console.log('Set inserido com sucesso', result);
@@ -172,7 +170,17 @@ export function hardResetProject() {
         console.log('Exercises table dropped.');
     });
 
+    // Drop the table
+    executeSql(`DROP TABLE IF EXISTS workouts;`, [], () => {
+        console.log('Exercises table dropped.');
+    });
+
     executeSql(`DROP TABLE IF EXISTS sets;`, [], () => {
+        console.log('Exercises table dropped.');
+    });
+
+    // Drop the table
+    executeSql(`DROP TABLE IF EXISTS completed_workouts;`, [], () => {
         console.log('Exercises table dropped.');
     });
 
@@ -201,6 +209,22 @@ export function hardResetProject() {
             });
         });
 
+        // Drop the table
+        executeSql(`DROP TABLE IF EXISTS workouts;`, [], () => {
+            console.log('Exercises table dropped.');
+
+            // Create the table with the correct schema
+            executeSql(`
+                CREATE TABLE IF NOT EXISTS workouts (
+                    id TEXT PRIMARY KEY,
+                    workout_name TEXT NOT NULL,
+                    day_of_week TEXT NOT NULL
+                );
+            `, [], () => {
+                console.log('Workouts table created with the correct schema.');
+            });
+        });
+
         // Drop sets table
         executeSql(`DROP TABLE IF EXISTS sets;`, [], () => {
             console.log('Sets table dropped.');
@@ -226,6 +250,30 @@ export function hardResetProject() {
     });
     executeSql(
         `PRAGMA table_info(exercises);`,
+        [],
+        (_, { rows }) => {
+            console.log('Updated table schema:', rows._array);
+        },
+        (_, error) => {
+            console.log('Error fetching table schema', error);
+            return !!error;
+        }
+    );
+
+    executeSql(
+        `PRAGMA table_info(workouts);`,
+        [],
+        (_, { rows }) => {
+            console.log('Updated table schema:', rows._array);
+        },
+        (_, error) => {
+            console.log('Error fetching table schema', error);
+            return !!error;
+        }
+    );
+
+    executeSql(
+        `PRAGMA table_info(completed_workouts);`,
         [],
         (_, { rows }) => {
             console.log('Updated table schema:', rows._array);
@@ -332,6 +380,7 @@ function getSetsForExercise(exerciseId: string): Promise<ExerciseSet[]> {
 export function getWorkoutOfTheDay(): Promise<WorkoutDetails | null> {
     return new Promise(async (resolve, reject) => {
         const allWorkouts = await listAllWorkouts()
+        console.log(allWorkouts)
 
         if (allWorkouts.length === 0) {
             reject('No workout detected')
@@ -353,20 +402,110 @@ export function getWorkoutOfTheDay(): Promise<WorkoutDetails | null> {
     })
 }
 
-export function deleteWorkout(workoutId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
+// Tipo para representar cada série
+type CompletedSet = {
+    setNumber: string;
+    repetitions: string;
+    weight: string;
+};
+
+// Tipo para representar cada exercício
+type CompletedExercise = {
+    exerciseId: string;
+    exerciseName: string;
+    sets: CompletedSet[];
+};
+
+// Tipo para representar o treino completo
+export type CompletedWorkoutDetails = {
+    workoutName: string;
+    date: string;
+    exercises: CompletedExercise[];
+};
+
+// Função para buscar os detalhes de um treino concluído específico
+export const getCompletedWorkoutDetails = async (completedWorkoutId: string) => {
+    return new Promise<CompletedWorkoutDetails | null>((resolve, reject) => {
+        // Buscar informações gerais do treino concluído
         executeSql(
-            `DELETE FROM workouts WHERE id = ?;`,
-            [workoutId],
-            (_, result) => {
-                console.log('Workout deleted successfully', result);
-                resolve();
+            `SELECT workout_name, date FROM completed_workouts WHERE workout_id = ?;`,
+            [completedWorkoutId],
+            (_, { rows }) => {
+                const workout = rows._array[0];
+
+                if (!workout) {
+                    console.log('Treino não encontrado');
+                    resolve(null);
+                    return;
+                }
+
+                // Buscar os exercícios relacionados ao treino concluído
+                executeSql(
+                    `SELECT id AS exerciseId, exercise_name FROM completed_exercises WHERE completed_workout_id = ?;`,
+                    [completedWorkoutId],
+                    (_, { rows }) => {
+                        const exercises: CompletedExercise[] = rows._array.map(exercise => ({
+                            exerciseId: exercise.exerciseId.toString(),
+                            exerciseName: exercise.exercise_name,
+                            sets: [],
+                        }));
+
+                        // Para cada exercício, buscar as séries realizadas
+                        const exerciseIds = exercises.map(e => e.exerciseId);
+                        if (exerciseIds.length === 0) {
+                            resolve({
+                                workoutName: workout.workout_name,
+                                date: workout.date,
+                                exercises: [],
+                            });
+                            return;
+                        }
+
+                        // Busca as séries relacionadas aos exercícios do treino concluído
+                        executeSql(
+                            `SELECT completed_exercise_id, set_number, repetitions, weight
+                   FROM completed_sets
+                   WHERE completed_exercise_id IN (${exerciseIds.join(',')})
+                   ORDER BY set_number ASC;`,
+                            [],
+                            (_, { rows }) => {
+                                rows._array.forEach(set => {
+                                    const exercise = exercises.find(e => e.exerciseId === set.completed_exercise_id.toString());
+                                    if (exercise) {
+                                        exercise.sets.push({
+                                            setNumber: set.set_number.toString(),
+                                            repetitions: set.repetitions.toString(),
+                                            weight: set.weight.toString(),
+                                        });
+                                    }
+                                });
+
+                                // Resolver a promise com os dados completos do treino concluído
+                                resolve({
+                                    workoutName: workout.workout_name,
+                                    date: workout.date,
+                                    exercises,
+                                });
+                            },
+                            (_, error) => {
+                                console.error('Erro ao buscar séries:', error);
+                                reject(error);
+                                return !!error
+                            }
+                        );
+                    },
+                    (_, error) => {
+                        console.error('Erro ao buscar exercícios:', error);
+                        reject(error);
+                        return !!error
+                    }
+                );
             },
             (_, error) => {
-                console.log('Error deleting workout', error);
+                console.error('Erro ao buscar treino concluído:', error);
                 reject(error);
-                return !!error;
+                return !!error
             }
         );
     });
-}
+};
