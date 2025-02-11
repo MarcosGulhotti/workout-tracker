@@ -1,5 +1,5 @@
 import React from 'react';
-import { KeyboardTypeOptions, StyleSheet, Text, View } from 'react-native';
+import { KeyboardTypeOptions, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { Input } from '../Input/Input';
 
 interface LabeledTextInputProps {
@@ -7,8 +7,9 @@ interface LabeledTextInputProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
-  secureTextEntry?: boolean; // For password fields
-  style?: object; // Optional additional styles
+  secureTextEntry?: boolean;
+  style?: TextStyle;
+  inputStyle?: TextStyle;
   type?: KeyboardTypeOptions
   onSubmitEditing?: () => void
 }
@@ -16,18 +17,19 @@ interface LabeledTextInputProps {
 export function LabeledTextInput({
   label,
   value,
+  inputStyle,
   onChangeText,
+  onSubmitEditing,
   placeholder = '',
   secureTextEntry = false,
   type = 'default',
-  onSubmitEditing,
   style = {}, // Default to an empty object
 }: LabeledTextInputProps) {
   return (
     <View style={[styles.container, style]}>
       <Text style={styles.label}>{label}</Text>
       <Input
-        style={styles.input}
+        style={[styles.input, inputStyle ?? inputStyle]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -43,19 +45,20 @@ export function LabeledTextInput({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
+    flex: 1
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 5,
-    color: '#34495E', // Dark color for the label
+    color: '#00171F',
+    fontFamily: 'Lato'
   },
   input: {
     borderWidth: 1,
-    borderColor: '#BDC3C7', // Light gray border
-    borderRadius: 5,
+    borderColor: '#BDBDBD',
+    borderRadius: 10,
     padding: 10,
     fontSize: 16,
-    backgroundColor: '#ECF0F1', // Light gray background
+    height: 40,
   },
 });

@@ -25,7 +25,7 @@ export function Input(args: InputProps) {
           throw new Error("No getValue function provided");
         }
         const customValue = await getValue();
-        console.log(customValue)
+
         setInputValue(customValue); // Set the resolved value to the state
       } catch (error) {
         console.error("Error fetching value:", error);
@@ -34,8 +34,6 @@ export function Input(args: InputProps) {
 
     getCustomValue();
   }, []); // Empty dependency array ensures this runs once when the component mounts
-
-
 
   return <TextInput value={String(inputValue)} {...args} />;
 }

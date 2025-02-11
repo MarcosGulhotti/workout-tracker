@@ -1,47 +1,47 @@
-import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from "react-native";
-import { Icon } from "react-native-elements";
+import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { TouchableOpacityProps } from "react-native-gesture-handler";
 
 type StyledButtonProps = {
     text: string;
     onPress?: () => void;
-    customStyles?: ViewStyle;
-    showIcon?: boolean;
-    iconName?: string;
-    disabled?: boolean;
-    customIcon?: string;
-    customIconColor?: string;
+    variant?: 'primary' | 'secondary';
+} & TouchableOpacityProps;
+
+export function StyledButton({ text, onPress, variant = 'primary', ...props }: StyledButtonProps) {
+    return (
+        <TouchableOpacity
+            style={[styles.styledButton, styles[variant]]}
+            onPress={onPress}
+            {...props}
+        >
+            <Text style={[styles.styledText, styles[`${variant}Text`]]}>{text}</Text>
+        </TouchableOpacity>
+    );
 }
 
-export function StyledButton({ text, onPress, customStyles, showIcon, iconName, disabled, customIcon, customIconColor }: StyledButtonProps) {
-    return (
-        <TouchableOpacity style={{ ...styles.styledButton, ...customStyles }} onPress={onPress} disabled={disabled}>
-            <View style={styles.styledContent}>
-                {(showIcon && iconName) && <Icon name={iconName} size={15} />}
-                <Text>{text}</Text>
-                <Icon name={customIcon ?? 'navigate-next'} color={customIconColor ?? '#1ABC9C'} />
-            </View>
-        </TouchableOpacity>
-    )
-}
 const styles = StyleSheet.create({
     styledButton: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        alignSelf: 'center',
-        backgroundColor: '#d5d5d5',
-        borderRadius: 5,
-        width: '90%',
-        maxHeight: 40,
         flex: 1,
+        height: 40,
+        borderRadius: 10,
+        justifyContent: 'center',
     },
-    styledContent: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flex: 1,
-        paddingHorizontal: 20,
+    styledText: {
+        fontSize: 16,
+        fontFamily: 'Lato',
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
-})
+    primary: {
+        backgroundColor: '#00A8E8',
+    },
+    secondary: {
+        backgroundColor: '#ECECEC',
+    },
+    primaryText: {
+        color: 'white',
+    },
+    secondaryText: {
+        color: '#333333',
+    },
+});
