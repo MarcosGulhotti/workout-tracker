@@ -21,63 +21,69 @@ import { getIconColor, getIconStyle } from "../utils/variants";
  *
  * @returns A JSX element that renders a footer area with action buttons and a central button.
  */
-export function ModalFooter({ actionButtons = {}, mainButton }: ModalFooterProps) {
-    const { primary, secondary } = actionButtons;
-    /**
-     * Renders an icon or a placeholder view based on the provided ActionButton configuration.
-     *
-     * @remarks
-     * If an ActionButton is passed, its icon name, color, size, and accessible properties are set.
-     * Otherwise, a placeholder view is displayed with zero opacity.
-     *
-     * @param btn - The optional ActionButton object containing icon, variant, and onPress properties.
-     * @returns A React component that renders an icon or a placeholder view.
-     */
-    const renderIcon = (btn?: ActionButton) => {
-        return btn ? (
-            <Icon
-                name={btn.icon}
-                color={getIconColor(btn.variant ?? 'primary')}
-                size={20}
-                onPress={btn.onPress}
-                accessible
-                accessibilityLabel={btn.icon}
-                containerStyle={[styles.customIcon, getIconStyle(btn.variant ?? 'primary')]}
-            />
-        ) : (
-            <View style={[styles.customIcon, { opacity: 0 }]} />
-        );
-    };
-
-    return (
-        <View style={styles.footer}>
-            <View>{renderIcon(primary)}</View>
-            <View style={styles.buttonContainer}>
-                <StyledButton text={mainButton.text} onPress={mainButton.onPress} />
-            </View>
-            <View>{renderIcon(secondary)}</View>
-        </View>
+export function ModalFooter({ actionButtons, mainButton }: ModalFooterProps) {
+  /**
+   * Renders an icon or a placeholder view based on the provided ActionButton configuration.
+   *
+   * @remarks
+   * If an ActionButton is passed, its icon name, color, size, and accessible properties are set.
+   * Otherwise, a placeholder view is displayed with zero opacity.
+   *
+   * @param btn - The optional ActionButton object containing icon, variant, and onPress properties.
+   * @returns A React component that renders an icon or a placeholder view.
+   */
+  const renderIcon = (btn?: ActionButton) => {
+    return btn ? (
+      <Icon
+        name={btn.icon}
+        color={getIconColor(btn.variant ?? "primary")}
+        size={20}
+        onPress={btn.onPress}
+        accessible
+        accessibilityLabel={btn.icon}
+        containerStyle={[
+          styles.customIcon,
+          getIconStyle(btn.variant ?? "primary"),
+        ]}
+      />
+    ) : (
+      <View style={[styles.customIcon, { opacity: 0 }]} />
     );
+  };
+
+  return (
+    <View style={styles.footer}>
+      <View>{renderIcon(actionButtons?.primary)}</View>
+      <View style={styles.buttonContainer}>
+        <StyledButton
+          text={mainButton.text}
+          onPress={mainButton.onPress}
+          variant={mainButton.variant}
+        />
+      </View>
+      <View>{renderIcon(actionButtons?.secondary)}</View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    footer: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        gap: 20,
-        backgroundColor: "white",
-    },
-    customIcon: {
-        borderRadius: 15,
-        width: 40,
-        height: 40,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    buttonContainer: {
-        flex: 1,
-    },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 20,
+    backgroundColor: "white",
+  },
+  customIcon: {
+    borderRadius: 15,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonContainer: {
+    flex: 1,
+  },
 });

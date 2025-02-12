@@ -4,4 +4,4 @@ CREATE TABLE IF NOT EXISTS workouts (
     workout_name TEXT NOT NULL,
     day_of_week TEXT NOT NULL
 );
-`
+`;

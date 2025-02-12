@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS completed_sets (
     observation TEXT,
     FOREIGN KEY (completed_exercise_id) REFERENCES completed_exercises (id) ON DELETE CASCADE
 );
-`
+`;

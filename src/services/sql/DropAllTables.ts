@@ -6,4 +6,4 @@ DROP TABLE IF EXISTS cardio;
 DROP TABLE IF EXISTS completed_exercises;
 DROP TABLE IF EXISTS completed_sets;
 DROP TABLE IF EXISTS completed_workouts;
-`
+`;

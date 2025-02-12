@@ -1,43 +1,39 @@
-import * as SQLite from 'expo-sqlite';
+import * as SQLite from "expo-sqlite";
 
 type SQLExec = {
-    sql: string;
-    args?: SQLite.SQLiteBindParams[];
-}
+  sql: string;
+  args?: SQLite.SQLiteBindParams[];
+};
 
 export type SQLExecCallback = (args: SQLExec) => void;
 export type SQLExecBatchCallback = (
-    sqlStatements: { sql: string, args?: SQLite.SQLiteBindParams[] }[],
+  sqlStatements: { sql: string; args?: SQLite.SQLiteBindParams[] }[],
 ) => void;
 
-export const database = SQLite.openDatabaseSync('workout_database');
+export const database = SQLite.openDatabaseSync("workout_database");
 
 export function useDataBase() {
-    const executeSql: SQLExecCallback = ({
-        sql,
-        args
-    }) => {
-        const query = database.prepareSync(sql);
+  const executeSql: SQLExecCallback = ({ sql, args }) => {
+    const query = database.prepareSync(sql);
 
-        return query.executeSync(args ?? []);
-    };
+    return query.executeSync(args ?? []);
+  };
 
-    const executeSqlBatch: SQLExecBatchCallback = (
-        sqlStatements: {
-            sql: string,
-            args?: SQLite.SQLiteBindParams[] | undefined,
-        }[],
-    ) => {
+  const executeSqlBatch: SQLExecBatchCallback = (
+    sqlStatements: {
+      sql: string;
+      args?: SQLite.SQLiteBindParams[] | undefined;
+    }[],
+  ) => {
+    sqlStatements.forEach(({ sql, args }) => {
+      const query = database.prepareSync(sql);
 
-        sqlStatements.forEach(({ sql, args }) => {
-            const query = database.prepareSync(sql);
+      query.executeSync(args ?? []);
+    });
+  };
 
-            query.executeSync(args ?? []);
-        });
-    };
-
-    return {
-        executeSql,
-        executeSqlBatch
-    };
+  return {
+    executeSql,
+    executeSqlBatch,
+  };
 }

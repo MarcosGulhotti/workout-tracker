@@ -7,9 +7,9 @@ type InputProps = {
 
 /**
  * A functional component that renders a text input field.
- * 
+ *
  * @param {InputProps} args - The properties passed to the input component.
- * 
+ *
  * @returns {JSX.Element} A TextInput component with the computed value and other passed properties.
  */
 export function Input(args: InputProps) {
@@ -30,7 +30,7 @@ export function Input(args: InputProps) {
       } catch (error) {
         console.error("Error fetching value:", error);
       }
-    }
+    };
 
     getCustomValue();
   }, []); // Empty dependency array ensures this runs once when the component mounts

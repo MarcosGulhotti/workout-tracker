@@ -1,16 +1,22 @@
 import { NavigationOptions } from "@/screens";
 import { ScreenNavigationProp } from "@/types/navigation";
 import { PropsWithChildren } from "react";
-import { SafeAreaView, StatusBar, StatusBarStyle, StyleSheet, View } from "react-native";
+import {
+  SafeAreaView,
+  StatusBar,
+  StatusBarStyle,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Header } from "../Header/Header";
 import { NavBar } from "../NavBar/NavBar";
 
 type PageWrapperProps = {
-    barStyle?: StatusBarStyle
-    selectedButton: NavigationOptions;
-    navigate: ScreenNavigationProp;
-    hideNavBar?: boolean;
-}
+  barStyle?: StatusBarStyle;
+  selectedButton: NavigationOptions;
+  navigate: ScreenNavigationProp;
+  hideNavBar?: boolean;
+};
 
 /**
  * A wrapper component that provides a consistent layout for pages.
@@ -20,28 +26,35 @@ type PageWrapperProps = {
  * @param {'default' | 'light-content' | 'dark-content'} [barStyle='default'] - The style of the status bar.
  * @returns {JSX.Element} The wrapped content with the specified background color and status bar style.
  */
-export function PageWrapper({ children, selectedButton, navigate, hideNavBar, barStyle = 'default' }: PropsWithChildren<PageWrapperProps>) {
-    return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle={barStyle} backgroundColor={'black'} />
-            <Header navigate={navigate} />
-            <View style={styles.content}>
-                {children}
-            </View>
-            {!hideNavBar &&
-                <NavBar selectedButton={selectedButton} handleNavigate={(options) => navigate.navigate(options)} />
-            }
-        </SafeAreaView>
-    )
+export function PageWrapper({
+  children,
+  selectedButton,
+  navigate,
+  hideNavBar,
+  barStyle = "default",
+}: PropsWithChildren<PageWrapperProps>) {
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={barStyle} backgroundColor={"black"} />
+      <Header navigate={navigate} />
+      <View style={styles.content}>{children}</View>
+      {!hideNavBar && (
+        <NavBar
+          selectedButton={selectedButton}
+          handleNavigate={(options) => navigate.navigate(options)}
+        />
+      )}
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 20,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
 });

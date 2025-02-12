@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS completed_exercises (
     exercise_name TEXT NOT NULL,
     FOREIGN KEY (completed_workout_id) REFERENCES completed_workouts (id) ON DELETE CASCADE
 );
-`
+`;

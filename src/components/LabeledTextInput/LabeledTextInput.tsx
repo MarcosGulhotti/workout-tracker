@@ -1,6 +1,12 @@
-import React from 'react';
-import { KeyboardTypeOptions, StyleSheet, Text, TextStyle, View } from 'react-native';
-import { Input } from '../Input/Input';
+import React from "react";
+import {
+  KeyboardTypeOptions,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+} from "react-native";
+import { Input } from "../Input/Input";
 
 interface LabeledTextInputProps {
   label: string;
@@ -10,8 +16,8 @@ interface LabeledTextInputProps {
   secureTextEntry?: boolean;
   style?: TextStyle;
   inputStyle?: TextStyle;
-  type?: KeyboardTypeOptions
-  onSubmitEditing?: () => void
+  type?: KeyboardTypeOptions;
+  onSubmitEditing?: () => void;
 }
 
 export function LabeledTextInput({
@@ -20,9 +26,9 @@ export function LabeledTextInput({
   inputStyle,
   onChangeText,
   onSubmitEditing,
-  placeholder = '',
+  placeholder = "",
   secureTextEntry = false,
-  type = 'default',
+  type = "default",
   style = {}, // Default to an empty object
 }: LabeledTextInputProps) {
   return (
@@ -45,17 +51,17 @@ export function LabeledTextInput({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
   },
   label: {
     fontSize: 14,
     marginBottom: 5,
-    color: '#00171F',
-    fontFamily: 'Lato'
+    color: "#00171F",
+    fontFamily: "Lato",
   },
   input: {
     borderWidth: 1,
-    borderColor: '#BDBDBD',
+    borderColor: "#BDBDBD",
     borderRadius: 10,
     padding: 10,
     fontSize: 16,

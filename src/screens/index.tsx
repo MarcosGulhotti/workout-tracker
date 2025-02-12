@@ -15,7 +15,7 @@ enableScreens();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export type NavigationOptions = 'Home' | 'CreateWorkout' | 'ListAllWorkouts';
+export type NavigationOptions = "Home" | "CreateWorkout" | "ListAllWorkouts";
 
 /**
  * Router component that sets up the navigation structure for the application.
@@ -24,18 +24,21 @@ export type NavigationOptions = 'Home' | 'CreateWorkout' | 'ListAllWorkouts';
  * @returns {JSX.Element} The navigation container with the defined stack navigator.
  */
 export function Router() {
-    return (
-        <SQLiteProvider databaseName='workout_database.db' onInit={initializeDatabase}>
-            <NavigationContainer>
-                <Stack.Navigator screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="Home" component={Home} />
-                    <Stack.Screen name="CreateWorkout" component={CreateWorkout} />
-                    <Stack.Screen name="CreateExercise" component={CreateExercises} />
-                    <Stack.Screen name="ListAllWorkouts" component={ListAllWorkouts} />
-                    <Stack.Screen name="WorkoutDetails" component={WorkoutDetailsPage} />
-                    <Stack.Screen name="WorkingOut" component={WorkingOut} />
-                </Stack.Navigator>
-            </NavigationContainer>
-        </SQLiteProvider>
-    )
+  return (
+    <SQLiteProvider
+      databaseName="workout_database.db"
+      onInit={initializeDatabase}
+    >
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="CreateWorkout" component={CreateWorkout} />
+          <Stack.Screen name="CreateExercise" component={CreateExercises} />
+          <Stack.Screen name="ListAllWorkouts" component={ListAllWorkouts} />
+          <Stack.Screen name="WorkoutDetails" component={WorkoutDetailsPage} />
+          <Stack.Screen name="WorkingOut" component={WorkingOut} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SQLiteProvider>
+  );
 }

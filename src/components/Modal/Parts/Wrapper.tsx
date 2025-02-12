@@ -9,11 +9,11 @@ type ModalWrapperProps = {
 
 /**
  * Renders an animated modal wrapper that includes a sliding transition and a fading background.
- * 
+ *
  * @param children - The content to render inside the modal.
  * @param visible - Controls the visibility state of the modal. Defaults to true.
  * @param onClose - Optional callback fired after the modal finishes closing.
- * 
+ *
  * @remarks
  * The modal animates into view by sliding up and fading in the background overlay, and
  * animates out by sliding down and fading out the overlay. Once the closing animation finishes,
@@ -79,12 +79,7 @@ export function ModalWrapper({
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Background overlay that fades in/out */}
-      <Animated.View
-        style={[
-          styles.overlay,
-          { opacity: fadeAnim },
-        ]}
-      />
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} />
 
       {/* Modal content that slides up/down */}
       <Animated.View

@@ -1,14 +1,14 @@
-import { type SQLiteDatabase } from 'expo-sqlite';
+import { type SQLiteDatabase } from "expo-sqlite";
 
 export async function initializeDatabase(database: SQLiteDatabase) {
-    await database.execAsync(`
+  await database.execAsync(`
         CREATE TABLE IF NOT EXISTS workouts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL
         );
     `);
 
-    await database.execAsync(`
+  await database.execAsync(`
         CREATE TABLE IF NOT EXISTS exercises (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             workout_id INTEGER NOT NULL,
@@ -17,7 +17,7 @@ export async function initializeDatabase(database: SQLiteDatabase) {
         );
     `);
 
-    await database.execAsync(`
+  await database.execAsync(`
         CREATE TABLE IF NOT EXISTS sets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             exercise_id INTEGER NOT NULL,
@@ -27,7 +27,7 @@ export async function initializeDatabase(database: SQLiteDatabase) {
         );
     `);
 
-    await database.execAsync(`
+  await database.execAsync(`
         CREATE TABLE IF NOT EXISTS completed_workouts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             workout_name TEXT NOT NULL,
@@ -37,7 +37,7 @@ export async function initializeDatabase(database: SQLiteDatabase) {
         );
     `);
 
-    await database.execAsync(`
+  await database.execAsync(`
         CREATE TABLE IF NOT EXISTS completed_exercises (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             completed_workout_id INTEGER NOT NULL,
@@ -46,7 +46,7 @@ export async function initializeDatabase(database: SQLiteDatabase) {
         );
     `);
 
-    await database.execAsync(`
+  await database.execAsync(`
         CREATE TABLE IF NOT EXISTS completed_sets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             completed_exercise_id INTEGER NOT NULL,

@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS sets (
     weight TEXT,          
     FOREIGN KEY (exercise_id) REFERENCES exercises (id) ON DELETE CASCADE
 );
-`
+`;

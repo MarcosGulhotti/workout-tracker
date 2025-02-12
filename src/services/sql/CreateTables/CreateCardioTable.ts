@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS cardio (
     speed REAL,
     FOREIGN KEY (workout_id) REFERENCES workouts (id) ON DELETE CASCADE
 );
-`
+`;
