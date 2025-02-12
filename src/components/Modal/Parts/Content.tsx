@@ -13,6 +13,6 @@ export function ModalContent({ children }: ModalContentProps) {
 
 const styles = StyleSheet.create({
     content: {
-        backgroundColor: 'white',
+        flex: 1
     }
 });

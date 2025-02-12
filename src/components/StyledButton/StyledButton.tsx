@@ -21,7 +21,6 @@ export function StyledButton({ text, onPress, variant = 'primary', ...props }: S
 
 const styles = StyleSheet.create({
     styledButton: {
-        flex: 1,
         height: 40,
         borderRadius: 10,
         justifyContent: 'center',
