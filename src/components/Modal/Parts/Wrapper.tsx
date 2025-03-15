@@ -69,7 +69,7 @@ export function ModalWrapper({
         onClose?.();
       });
     }
-  }, [visible]);
+  }, [fadeAnim, onClose, slideAnim, visible]);
 
   // If we no longer need to be visible, skip rendering altogether
   if (!shouldRender) {
@@ -79,7 +79,18 @@ export function ModalWrapper({
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Background overlay that fades in/out */}
-      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} />
+      <Animated.View
+        style={[styles.overlay, { opacity: fadeAnim }]}
+        onTouchEnd={onClose}
+        {...{
+          onStartShouldSetResponder: () => true,
+          onResponderMove: (e) => {
+            if (e.nativeEvent.locationY > 50) {
+              onClose?.();
+            }
+          },
+        }}
+      />
 
       {/* Modal content that slides up/down */}
       <Animated.View

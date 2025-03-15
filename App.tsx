@@ -1,3 +1,4 @@
+import { CreateWorkoutProvider } from "@/context/CreateWorkoutContext";
 import { useFonts } from "expo-font";
 import { View } from "react-native";
 import { Router } from "./src/screens";
@@ -16,7 +17,9 @@ export default function App() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Router />
+      <CreateWorkoutProvider>
+        <Router />
+      </CreateWorkoutProvider>
     </View>
   );
 }

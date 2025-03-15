@@ -2,10 +2,9 @@ import { Modal } from "@/components/Modal/Modal";
 import { DAYS_OF_WEEK } from "@/consts/days";
 import { CreateExerciseProps } from "@/database/types";
 import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
-import { openDatabaseSync } from "expo-sqlite";
+import { useCreateWorkoutContext } from "@/hooks/useCreateWorkoutContext";
 import { useState } from "react";
 import {
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -21,8 +20,6 @@ import { Separator } from "../../components/Separator/Separator";
 import { StyledButton } from "../../components/StyledButton/StyledButton";
 import { NavigationPageProps } from "../../types/navigation";
 
-const database = openDatabaseSync("workout_database.db");
-
 export function CreateWorkout({ navigation }: NavigationPageProps) {
   const [workoutName, setWorkoutName] = useState<string>("");
   const [exerciseName, setExerciseName] = useState<string>("");
@@ -31,10 +28,9 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
   const [showExercisesModal, setShowExercisesModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string>("");
 
-  const [cardioDuration, setCardioDuration] = useState<string>("");
+  const { handleCreateWorkout } = useCreateWorkoutContext();
 
-  const [reps, setReps] = useState<string[]>([]);
-  const [weights, setWeights] = useState<string[]>([]);
+  const [cardioDuration, setCardioDuration] = useState<string>("");
 
   const [numberOfSets, setNumberOfSets] = useState<string>(""); // Number of sets (user input)
   const [setsData, setSetsData] = useState<{ reps: string; weight: string }[]>(
@@ -44,8 +40,6 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
   const [savedExercises, setSavedExercises] = useState<CreateExerciseProps[]>(
     [],
   );
-
-  const [showDays, setShowDays] = useState(false);
 
   const workoutDatabase = useWorkoutDatabase();
 
@@ -70,16 +64,6 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
     setSetsData([]); // Reset setsData
     setNumberOfSets("");
     setExerciseName("");
-  };
-
-  const handleCreateWorkout = async () => {
-    console.log("FOI");
-    const { response } = await workoutDatabase.createWorkout({
-      workoutName,
-      exercises: savedExercises,
-    });
-
-    Alert.alert(response);
   };
 
   const handleNumberOfSetsChange = (text: string) => {
@@ -120,15 +104,19 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={100}
       >
-        <ScrollView>
+        <ScrollView keyboardShouldPersistTaps="handled">
           <LabeledTextInput
-            label="Workout Name"
+            label="Workout Name *"
             placeholder="Enter workout name"
             value={workoutName}
-            onChangeText={(text) => setWorkoutName(text)}
+            onChangeText={(text) => {
+              setWorkoutName(text);
+            }}
+            style={{ paddingHorizontal: 20 }}
           />
+
           <View style={styles.setsInputContainer}>
             <View style={styles.container}>
               <Text style={styles.label}>Day of the week</Text>
@@ -136,7 +124,10 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
                 text={
                   selectedDay.length ? selectedDay : "Enter Day of the week"
                 }
-                onPress={() => setShowDaysModal(true)}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setShowDaysModal(true);
+                }}
                 variant={selectedDay.length ? "selectedInput" : "input"}
               />
             </View>
@@ -145,6 +136,7 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
               placeholder="Enter cardio duration"
               value={cardioDuration}
               onChangeText={(text) => setCardioDuration(text)}
+              type="number-pad"
             />
           </View>
 
@@ -152,13 +144,13 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
 
           <View style={styles.setsInputContainer}>
             <LabeledTextInput
-              label="Exercise Name"
+              label="Exercise Name *"
               placeholder="Enter exercise name"
               value={exerciseName}
               onChangeText={setExerciseName}
             />
             <LabeledTextInput
-              label="Number of Sets"
+              label="Number of Sets *"
               placeholder="Enter number of sets"
               value={String(numberOfSets)}
               onChangeText={(text) => {
@@ -178,18 +170,18 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
                   <Text>Set {index + 1}</Text>
                 </View>
                 <LabeledTextInput
-                  label="Reps"
-                  type="numeric"
-                  placeholder="Enter reps"
+                  label="Repetitions"
+                  type="decimal-pad"
+                  placeholder="Enter repetitions"
                   value={setsData[index]?.reps || ""}
                   onChangeText={(text) =>
                     handleSetDataChange(index, "reps", text)
                   }
-                  onSubmitEditing={Keyboard.dismiss}
+                  error={setsData[index]?.reps === ""}
                 />
                 <LabeledTextInput
                   label="Weight"
-                  type="number-pad"
+                  type="decimal-pad"
                   placeholder="Enter weight"
                   value={setsData[index]?.weight || ""}
                   onChangeText={(text) =>
@@ -220,8 +212,12 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
         {exerciseName.length === 0 && savedExercises.length > 0 && (
           <StyledButton
             text="Create workout"
-            onPress={handleCreateWorkout}
-            disabled={!workoutName}
+            onPress={() =>
+              handleCreateWorkout(workoutDatabase, {
+                exercises: savedExercises,
+                workoutName,
+              })
+            }
           />
         )}
       </View>
@@ -236,17 +232,27 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
           customIcon="calendar"
         />
         <Modal.Content>
-          <ScrollView style={styles.test}>
+          <ScrollView style={styles.modalItemsContainer}>
             {DAYS_OF_WEEK.map((day, index) => (
               <TouchableOpacity
                 key={index}
-                style={styles.testItem}
+                style={[
+                  styles.modalItem,
+                  selectedDay === day ? { backgroundColor: "#00A8E8" } : {},
+                ]}
                 onPress={() => {
                   setSelectedDay(day);
                   setShowDaysModal(false);
                 }}
               >
-                <Text style={styles.testText}>{day}</Text>
+                <Text
+                  style={[
+                    styles.modalItemText,
+                    selectedDay === day ? { color: "#fff" } : {},
+                  ]}
+                >
+                  {day}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -272,10 +278,24 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
           onClose={() => setShowExercisesModal(false)}
         />
         <Modal.Content>
-          <ScrollView style={styles.test}>
+          <ScrollView style={styles.modalItemsContainer}>
             {savedExercises.map((exercise, index) => (
-              <View key={index} style={styles.testItem}>
-                <Text style={styles.testText}>{exercise.exerciseName}</Text>
+              <View key={index} style={styles.modalItem}>
+                <Text style={styles.modalItemText}>
+                  {exercise.exerciseName}
+                </Text>
+
+                <View style={styles.badgeContainer}>
+                  {exercise.sets.length > 0 &&
+                    exercise.sets.map((set, idx) => (
+                      <Text key={idx} style={styles.badge}>
+                        {set.repetitions
+                          ? set.repetitions + " reps "
+                          : `Set ${idx + 1} ` + "Missing data"}
+                        {set.weight ? set.weight + "kg" : ""}
+                      </Text>
+                    ))}
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -286,7 +306,6 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
 }
 
 const styles = StyleSheet.create({
-  //NEW
   container: {
     flex: 1,
   },
@@ -294,6 +313,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     marginVertical: 10,
+    paddingHorizontal: 20,
     gap: 10,
   },
   setNumberView: {
@@ -315,11 +335,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
   },
-  test: {
+  modalItemsContainer: {
     display: "flex",
     flexDirection: "column",
   },
-  testItem: {
+  modalItem: {
     backgroundColor: "#F2F2F2",
     borderRadius: 10,
     padding: 15,
@@ -327,7 +347,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 30,
     alignItems: "center",
   },
-  testText: {
+  modalItemText: {
     fontSize: 20,
     fontFamily: "Montserrat",
     fontWeight: "bold",
@@ -336,6 +356,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 5,
     color: "#00171F",
+    fontFamily: "Lato",
+  },
+  badgeContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 5,
+  },
+  badge: {
+    backgroundColor: "#00A8E8",
+    color: "white",
+    padding: 5,
+    borderRadius: 10,
     fontFamily: "Lato",
   },
 });

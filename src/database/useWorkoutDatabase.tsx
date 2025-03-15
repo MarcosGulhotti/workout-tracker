@@ -43,14 +43,33 @@ export function useWorkoutDatabase() {
    * @throws Will throw an error if the database query fails.
    */
   async function listAllWorkouts(): Promise<{ allWorkouts: Workout[] }> {
+    const exercisesQuery = `
+              SELECT id, name
+              FROM exercises
+              WHERE workout_id = ?;
+          `;
+
     const statement = await database.prepareAsync("SELECT * FROM workouts");
+    const exercisesStatement = await database.prepareAsync(exercisesQuery);
 
     try {
       const results = await statement.executeAsync<Workout>();
 
       const allWorkouts = await results.getAllAsync();
 
-      return { allWorkouts };
+      const exercises = await Promise.all(
+        allWorkouts.map(async (workout) => {
+          const exercisesResult =
+            await exercisesStatement.executeAsync<Exercise>([workout.id]);
+
+          const exercise = (workout.exercises =
+            await exercisesResult.getAllAsync());
+
+          return { ...workout, exercises: exercise };
+        }),
+      );
+
+      return { allWorkouts: exercises };
     } catch (error) {
       throw new Error(String(error));
     } finally {
@@ -121,7 +140,7 @@ export function useWorkoutDatabase() {
       // Construindo a resposta final
       const workoutDetails: WorkoutDetails = {
         workout_id: workout.id,
-        workout_name: workout.workout_name,
+        workout_name: workout.name,
         exercises: exercisesWithSets,
       };
 

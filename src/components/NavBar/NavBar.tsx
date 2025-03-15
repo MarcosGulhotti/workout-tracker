@@ -1,5 +1,5 @@
 import { NavigationOptions } from "@/screens";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Icon } from "react-native-elements";
 
 type NavBarProps = {
@@ -16,33 +16,18 @@ export function NavBar({ handleNavigate, selectedButton }: NavBarProps) {
     <View style={styles.container}>
       <View
         style={
-          selectedButton === "CreateWorkout"
-            ? styles.selectedIcon
-            : styles.iconContainer
-        }
-      >
-        <Icon
-          name="add-circle-outline"
-          color="#FFFFFF"
-          size={50}
-          onPress={() => handlePress("CreateWorkout")}
-          accessible
-          accessibilityLabel="Add"
-        />
-      </View>
-      <View
-        style={
           selectedButton === "Home" ? styles.selectedIcon : styles.iconContainer
         }
       >
         <Icon
           name="home"
-          color="#FFFFFF"
-          size={50}
+          color="#1E1E1E"
+          size={35}
           onPress={() => handlePress("Home")}
           accessible
           accessibilityLabel="Home"
         />
+        <Text style={styles.styledText}>Home</Text>
       </View>
       <View
         style={
@@ -53,12 +38,30 @@ export function NavBar({ handleNavigate, selectedButton }: NavBarProps) {
       >
         <Icon
           name="list"
-          color="#FFFFFF"
-          size={50}
+          color="#1E1E1E"
+          size={35}
           onPress={() => handlePress("ListAllWorkouts")}
+          accessible
+          accessibilityLabel="Workouts"
+        />
+        <Text style={styles.styledText}>Workouts</Text>
+      </View>
+      <View
+        style={
+          selectedButton === "History"
+            ? styles.selectedIcon
+            : styles.iconContainer
+        }
+      >
+        <Icon
+          name="history"
+          color="#1E1E1E"
+          size={35}
+          onPress={() => handlePress("History")}
           accessible
           accessibilityLabel="List"
         />
+        <Text style={styles.styledText}>History</Text>
       </View>
     </View>
   );
@@ -66,32 +69,22 @@ export function NavBar({ handleNavigate, selectedButton }: NavBarProps) {
 
 const styles = StyleSheet.create({
   container: {
-    width: "90%",
-    alignSelf: "center",
+    height: 60,
     flexDirection: "row",
     justifyContent: "space-around",
-    backgroundColor: "#003459",
-    borderRadius: 40,
-    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
   },
   selectedIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 5,
-    shadowColor: "#FFFFFF",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    marginTop: -10,
+  },
+  styledText: {
+    fontFamily: "Lato",
+    fontSize: 12,
   },
 });

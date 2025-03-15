@@ -13,7 +13,7 @@ export type ExerciseForWorkout = {
 
 export type Workout = {
   id: string;
-  workout_name: string;
+  name: string;
   exercises?: Exercise[];
 };
 
@@ -64,6 +64,7 @@ export type CreateExerciseProps = {
   sets: {
     set_number: number;
     repetitions: number;
+    weight: number;
   }[];
 };
 
@@ -77,4 +78,8 @@ export type WorkoutDetails = {
   workout_id: string;
   workout_name: string;
   exercises: WorkoutExercisesDetails[];
+};
+
+export type WorkoutDatabase = {
+  createWorkout: (props: CreateWorkoutProps) => Promise<{ response: string }>;
 };

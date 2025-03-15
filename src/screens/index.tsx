@@ -15,7 +15,11 @@ enableScreens();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export type NavigationOptions = "Home" | "CreateWorkout" | "ListAllWorkouts";
+export type NavigationOptions =
+  | "Home"
+  | "CreateWorkout"
+  | "ListAllWorkouts"
+  | "History";
 
 /**
  * Router component that sets up the navigation structure for the application.

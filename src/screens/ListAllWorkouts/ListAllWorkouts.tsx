@@ -1,4 +1,5 @@
-import { Workout } from "@/database/types";
+import { Modal } from "@/components/Modal/Modal";
+import { Workout, WorkoutDetails } from "@/database/types";
 import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
@@ -8,20 +9,26 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  View,
 } from "react-native";
 import { Icon } from "react-native-elements";
-import { Header } from "../../components/Header/Header";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [detailedWorkout, setDetailedWorkout] = useState<WorkoutDetails | null>(
+    null,
+  );
 
-  const workoutDatabase = useWorkoutDatabase();
+  const { listAllWorkouts, getWorkoutDetails } = useWorkoutDatabase();
 
-  const handleListAllWorkouts = async () => {
-    const result = await workoutDatabase.listAllWorkouts().catch((err) => {
+  const handleListAllWorkouts = useCallback(async () => {
+    setLoading(true);
+    const result = await listAllWorkouts().catch((err) => {
       Alert.alert(
         "Error",
         `There was an error listing all workouts: ${err.message}`,
@@ -32,44 +39,114 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
     if (result && result.allWorkouts) {
       setWorkouts(result.allWorkouts);
     }
-  };
+    setLoading(false);
+  }, [listAllWorkouts]);
+
+  const handleGetWorkoutDetails = useCallback(
+    async (workoutId: string) => {
+      const result = await getWorkoutDetails(workoutId).catch((err) => {
+        Alert.alert(
+          "Error",
+          `There was an error getting detailed workout: ${err.message}`,
+        );
+        return {} as WorkoutDetails;
+      });
+
+      if (result) {
+        setDetailedWorkout(result);
+      }
+    },
+    [getWorkoutDetails],
+  );
 
   useFocusEffect(
     useCallback(() => {
-      handleListAllWorkouts();
-    }, []),
+      if (!loading && workouts.length === 0) {
+        handleListAllWorkouts();
+      }
+    }, [handleListAllWorkouts, loading, workouts.length]),
   );
 
   useEffect(() => {
-    handleListAllWorkouts();
-  }, []);
+    if (!loading && workouts.length === 0) {
+      handleListAllWorkouts();
+    }
+  }, [handleListAllWorkouts, loading, workouts]);
 
-  console.log(workouts);
+  console.log(detailedWorkout);
 
   return (
-    <PageWrapper navigate={navigation} selectedButton="ListAllWorkouts">
-      <Header
-        navigate={navigation}
-        actionButtonIcon="add-circle"
-        handleClickActionButton={() => navigation.navigate("CreateWorkout")}
-      />
-      <Separator text="Workouts" />
-
+    <PageWrapper
+      navigate={navigation}
+      selectedButton="ListAllWorkouts"
+      hideNavBar={detailsModalVisible}
+    >
       <ScrollView style={styles.container}>
-        {workouts &&
+        <Separator text="Workouts" />
+        {loading && <Text>Loading...</Text>}
+        {!loading &&
+          workouts &&
           workouts.map((workout, index) => (
-            <TouchableOpacity
-              style={styles.createdExercisesContainer}
-              onPress={() =>
-                navigation.navigate("WorkoutDetails", { workoutId: workout.id })
-              }
-              key={index}
-            >
-              <Text style={styles.texts}>{workout.workout_name}</Text>
-              <Icon name="chevron-right" color="black" />
-            </TouchableOpacity>
+            <View style={styles.createdExercisesContainer} key={index}>
+              <View>
+                <Text style={styles.title}>{workout.name}</Text>
+                <Text style={styles.texts}>
+                  {workout.exercises?.length ?? "No"} Exercises
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={{ width: 30, backgroundColor: "transparent" }}
+                onPress={() => {
+                  handleGetWorkoutDetails(workout.id);
+                  setDetailsModalVisible(true);
+                }}
+              >
+                <Icon name="more-vert" color="#BDBDBD" />
+              </TouchableOpacity>
+            </View>
           ))}
       </ScrollView>
+      <Modal.Wrapper
+        visible={detailsModalVisible}
+        onClose={() => setDetailsModalVisible(false)}
+      >
+        <Modal.Header
+          title={detailedWorkout?.workout_name ?? "Workout Details"}
+          onClose={() => setDetailsModalVisible(false)}
+        />
+        <Modal.Content>
+          <ScrollView style={styles.modalItemsContainer}>
+            {detailedWorkout &&
+              detailedWorkout.exercises?.map((exercise, index) => (
+                <View key={index}>
+                  <Text style={styles.title}>
+                    {exercise.exercise_name} - {exercise.sets?.length ?? "No"}{" "}
+                    Sets
+                  </Text>
+                </View>
+              ))}
+          </ScrollView>
+          <Modal.Footer
+            mainButton={{
+              text: "Start Workout",
+              onPress: () => null,
+              variant: "primary",
+            }}
+            actionButtons={{
+              primary: {
+                icon: "delete",
+                onPress: () => null,
+                variant: "danger",
+              },
+              secondary: {
+                icon: "edit",
+                onPress: () => null,
+                variant: "secondary",
+              },
+            }}
+          />
+        </Modal.Content>
+      </Modal.Wrapper>
     </PageWrapper>
   );
 }
@@ -78,23 +155,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    flexGrow: 1,
-    width: "90%",
-    alignSelf: "center",
-  },
   createdExercisesContainer: {
-    display: "flex",
+    width: "90%",
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    flex: 1,
-    padding: 10,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "#e5e5e5",
+    justifyContent: "space-between",
+    alignSelf: "center",
+    padding: 15,
+    backgroundColor: "#F2F2F2",
+    marginVertical: 5,
+    borderRadius: 15,
   },
   texts: {
-    color: "black",
+    fontFamily: "Lato",
+    color: "#415A77",
+    fontSize: 12,
+  },
+  title: {
+    fontFamily: "Lato",
+    color: "#1E1E1E",
+    fontWeight: "bold",
+  },
+  modalItemsContainer: {
+    display: "flex",
+    flexDirection: "column",
   },
 });

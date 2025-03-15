@@ -13,21 +13,37 @@ export function StyledButton({
   onPress,
   customStyles,
   variant = "primary",
+  disabled,
   ...props
 }: StyledButtonProps) {
   return (
     <TouchableOpacity
-      style={[styles.styledButton, styles[variant], customStyles]}
+      style={[
+        styles.styledButton,
+        styles[variant],
+        customStyles,
+        disabled && styles.disabled,
+      ]}
       onPress={onPress}
+      disabled={disabled}
       {...props}
     >
-      <Text style={[styles.styledText, styles[`${variant}Text`]]}>{text}</Text>
+      <Text
+        style={[
+          styles.styledText,
+          styles[`${variant}Text`],
+          disabled && styles.disabledText,
+        ]}
+      >
+        {text}
+      </Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   styledButton: {
+    flex: 1,
     height: 40,
     borderRadius: 10,
     justifyContent: "center",
@@ -77,5 +93,11 @@ const styles = StyleSheet.create({
     fontWeight: "normal",
     textAlign: "left",
     marginLeft: 10,
+  },
+  disabled: {
+    backgroundColor: "#D3D3D3",
+  },
+  disabledText: {
+    color: "#A9A9A9",
   },
 });

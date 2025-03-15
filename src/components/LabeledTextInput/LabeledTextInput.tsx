@@ -18,6 +18,7 @@ interface LabeledTextInputProps {
   inputStyle?: TextStyle;
   type?: KeyboardTypeOptions;
   onSubmitEditing?: () => void;
+  error?: boolean;
 }
 
 export function LabeledTextInput({
@@ -30,12 +31,17 @@ export function LabeledTextInput({
   secureTextEntry = false,
   type = "default",
   style = {}, // Default to an empty object
+  error = false,
 }: LabeledTextInputProps) {
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, error && styles.errorLabel]}>{label}</Text>
       <Input
-        style={[styles.input, inputStyle ?? inputStyle]}
+        style={[
+          styles.input,
+          inputStyle,
+          error && styles.errorInput, // Apply error style if error is true
+        ]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -66,5 +72,11 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
     height: 40,
+  },
+  errorInput: {
+    borderColor: "red",
+  },
+  errorLabel: {
+    color: "red",
   },
 });
