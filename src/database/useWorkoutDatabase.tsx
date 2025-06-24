@@ -80,8 +80,6 @@ export function useWorkoutDatabase() {
 
   async function getWorkoutDetails(workoutId: string) {
     try {
-      console.log("🚀 Fetching workout details for ID:", workoutId);
-
       // Query para pegar o workout pelo ID
       const workoutQuery = `
                 SELECT id, name AS workout_name
@@ -100,7 +98,6 @@ export function useWorkoutDatabase() {
       }
 
       const workout = workoutData[0];
-      console.log("✅ Workout fetched:", workout);
 
       // Query para pegar os exercícios vinculados ao workout
       const exercisesQuery = `
@@ -113,8 +110,6 @@ export function useWorkoutDatabase() {
         workoutId,
       ]);
       const exercisesData = await exercisesResult.getAllAsync();
-
-      console.log("✅ Exercises fetched:", exercisesData);
 
       const exercisesWithSets = [];
 
@@ -141,14 +136,9 @@ export function useWorkoutDatabase() {
       // Construindo a resposta final
       const workoutDetails: WorkoutDetails = {
         workout_id: workout.id,
-        workout_name: workout.name,
+        workout_name: workout.workout_name,
         exercises: exercisesWithSets,
       };
-
-      console.log(
-        "🎉 Full workout details fetched successfully:",
-        workoutDetails,
-      );
 
       // Finaliza as consultas
       await workoutStatement.finalizeAsync();

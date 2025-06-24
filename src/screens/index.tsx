@@ -19,7 +19,8 @@ export type NavigationOptions =
   | "Home"
   | "CreateWorkout"
   | "ListAllWorkouts"
-  | "History";
+  | "History"
+  | "WorkingOut";
 
 /**
  * Router component that sets up the navigation structure for the application.

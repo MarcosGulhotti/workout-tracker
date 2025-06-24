@@ -114,11 +114,14 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
           <Modal.Footer
             mainButton={{
               text: "Start Workout",
-              onPress: () =>
-                detailedWorkout &&
-                navigation.navigate("WorkingOut", {
-                  workoutId: detailedWorkout.workout_id,
-                }),
+              onPress: () => {
+                if (detailedWorkout) {
+                  navigation.navigate("WorkingOut", {
+                    workoutId: detailedWorkout.workout_id,
+                  });
+                  setDetailsModalVisible(false);
+                }
+              },
               variant: "primary",
             }}
             actionButtons={{

@@ -13,7 +13,7 @@ export type ExerciseForWorkout = {
 
 export type Workout = {
   id: string;
-  name: string;
+  workout_name: string;
   exercises?: Exercise[];
 };
 
