@@ -82,4 +82,5 @@ export type WorkoutDetails = {
 
 export type WorkoutDatabase = {
   createWorkout: (props: CreateWorkoutProps) => Promise<{ response: string }>;
+  listAllWorkouts: () => Promise<{ allWorkouts: Workout[] }>;
 };

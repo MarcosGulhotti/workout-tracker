@@ -177,7 +177,6 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
                   onChangeText={(text) =>
                     handleSetDataChange(index, "reps", text)
                   }
-                  error={setsData[index]?.reps === ""}
                 />
                 <LabeledTextInput
                   label="Weight"
@@ -213,10 +212,14 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
           <StyledButton
             text="Create workout"
             onPress={() =>
-              handleCreateWorkout(workoutDatabase, {
-                exercises: savedExercises,
-                workoutName,
-              })
+              handleCreateWorkout(
+                workoutDatabase,
+                {
+                  exercises: savedExercises,
+                  workoutName,
+                },
+                () => navigation.navigate("ListAllWorkouts"),
+              )
             }
           />
         )}
@@ -334,6 +337,7 @@ const styles = StyleSheet.create({
   buttonsContainer: {
     flexDirection: "row",
     gap: 10,
+    padding: 20,
   },
   modalItemsContainer: {
     display: "flex",

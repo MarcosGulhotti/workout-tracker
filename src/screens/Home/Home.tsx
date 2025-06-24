@@ -1,6 +1,8 @@
+import WorkoutCard from "@/components/Cards/WorkoutCard/WorkoutCard";
+import { Workout } from "@/database/types";
 import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import React, { useCallback, useEffect, useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Text, View } from "react-native";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { NavigationPageProps } from "../../types/navigation";
 
@@ -9,15 +11,34 @@ export function Home({ navigation }: NavigationPageProps) {
   const [shouldShowNoWorkoutImage, setShouldShowNoWorkoutImage] =
     useState(false);
 
-  const workoutDatabase = useWorkoutDatabase();
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+
+  const { checkWorkoutsAndHistory, listAllWorkouts } = useWorkoutDatabase();
+
+  const handleListWorkouts = useCallback(async () => {
+    const result = await listAllWorkouts().catch((err) => {
+      Alert.alert(
+        "Error",
+        `There was an error listing all workouts: ${err.message}`,
+      );
+      return { allWorkouts: [] as Workout[] };
+    });
+
+    if (result && result.allWorkouts) {
+      setWorkouts(result.allWorkouts.slice(0, 3));
+    }
+  }, [listAllWorkouts]);
 
   const checkIfUserHasData = useCallback(async () => {
-    const { hasWorkoutsOrHistory } =
-      await workoutDatabase.checkWorkoutsAndHistory();
+    const { hasWorkoutsOrHistory } = await checkWorkoutsAndHistory();
 
-    setShouldShowNoWorkoutImage(hasWorkoutsOrHistory);
+    if (hasWorkoutsOrHistory) {
+      await handleListWorkouts();
+    } else {
+      setShouldShowNoWorkoutImage(hasWorkoutsOrHistory);
+    }
     setLoading(false);
-  }, [workoutDatabase]);
+  }, [checkWorkoutsAndHistory, handleListWorkouts]);
 
   useEffect(() => {
     if (loading) {
@@ -56,10 +77,24 @@ export function Home({ navigation }: NavigationPageProps) {
           </View>
         )}
 
+        {!loading && workouts.length > 0 && (
+          <View style={{ flex: 1, padding: 10 }}>
+            <Text
+              style={{
+                fontSize: 24,
+                fontFamily: "BebasNeue",
+                color: "#3F3D56",
+                marginBottom: 10,
+              }}
+            >
+              Your Workouts
+            </Text>
+            <WorkoutCard workouts={workouts} onPress={(workout) => {}} />
+          </View>
+        )}
+
         {/* <StyledButton text='RESET' onPress={workoutDatabase.hardResetProject} customStyles={{ margin: 10, height: 40 }} /> */}
       </View>
     </PageWrapper>
   );
 }
-
-const styles = StyleSheet.create({});

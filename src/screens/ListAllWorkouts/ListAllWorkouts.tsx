@@ -1,3 +1,4 @@
+import WorkoutCard from "@/components/Cards/WorkoutCard/WorkoutCard";
 import { Modal } from "@/components/Modal/Modal";
 import { Workout, WorkoutDetails } from "@/database/types";
 import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
@@ -8,10 +9,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { Icon } from "react-native-elements";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { NavigationPageProps } from "../../types/navigation";
@@ -73,8 +72,6 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
     }
   }, [handleListAllWorkouts, loading, workouts]);
 
-  console.log(detailedWorkout);
-
   return (
     <PageWrapper
       navigate={navigation}
@@ -84,27 +81,15 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
       <ScrollView style={styles.container}>
         <Separator text="Workouts" />
         {loading && <Text>Loading...</Text>}
-        {!loading &&
-          workouts &&
-          workouts.map((workout, index) => (
-            <View style={styles.createdExercisesContainer} key={index}>
-              <View>
-                <Text style={styles.title}>{workout.name}</Text>
-                <Text style={styles.texts}>
-                  {workout.exercises?.length ?? "No"} Exercises
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={{ width: 30, backgroundColor: "transparent" }}
-                onPress={() => {
-                  handleGetWorkoutDetails(workout.id);
-                  setDetailsModalVisible(true);
-                }}
-              >
-                <Icon name="more-vert" color="#BDBDBD" />
-              </TouchableOpacity>
-            </View>
-          ))}
+        {!loading && workouts && (
+          <WorkoutCard
+            workouts={workouts}
+            onPress={(workout) => {
+              handleGetWorkoutDetails(workout.id);
+              setDetailsModalVisible(true);
+            }}
+          />
+        )}
       </ScrollView>
       <Modal.Wrapper
         visible={detailsModalVisible}
@@ -129,7 +114,11 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
           <Modal.Footer
             mainButton={{
               text: "Start Workout",
-              onPress: () => null,
+              onPress: () =>
+                detailedWorkout &&
+                navigation.navigate("WorkingOut", {
+                  workoutId: detailedWorkout.workout_id,
+                }),
               variant: "primary",
             }}
             actionButtons={{

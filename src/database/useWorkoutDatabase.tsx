@@ -68,6 +68,7 @@ export function useWorkoutDatabase() {
           return { ...workout, exercises: exercise };
         }),
       );
+      // console.log(JSON.stringify(exercises, null, 2));
 
       return { allWorkouts: exercises };
     } catch (error) {
