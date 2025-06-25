@@ -36,7 +36,7 @@ export function NavigationFooter({
         <TouchableOpacity style={styles.finishButton} onPress={onFinish}>
           <MaterialCommunityIcons
             name="flag-checkered"
-            size={36}
+            size={22}
             color="white"
           />
           <Text style={styles.finishText}>Finish</Text>
@@ -70,18 +70,14 @@ export function NavigationFooter({
 const styles = StyleSheet.create({
   footerContainer: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingTop: 20,
-    paddingBottom: 10,
     paddingHorizontal: 30,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
   },
   circleButton: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     borderRadius: 30,
     backgroundColor: "#F2F2F2",
     justifyContent: "center",
@@ -92,15 +88,16 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   finishButton: {
-    width: 80,
-    height: 80,
+    width: 60,
+    height: 60,
     borderRadius: 50,
     backgroundColor: "#00A8E8",
     justifyContent: "center",
     alignItems: "center",
-    marginVertical: 10,
+    marginVertical: 5,
   },
   finishText: {
+    fontSize: 12,
     color: "white",
     fontWeight: "bold",
     marginTop: 5,

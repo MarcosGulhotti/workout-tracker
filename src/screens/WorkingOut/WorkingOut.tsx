@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Icon } from "react-native-elements";
 import { NavigationPageProps } from "../../types/navigation";
 import { NavigationFooter } from "./components/NavigationFooter";
 
@@ -44,7 +43,26 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
     useState(false);
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
 
+  const isCurrentExerciseCompleted = useMemo(() => {
+    if (
+      !workout ||
+      currentExerciseIndex < 0 ||
+      currentExerciseIndex >= workout.exercises.length
+    ) {
+      return false;
+    }
+    const currentExercise = workout.exercises[currentExerciseIndex];
+    return completedExercises.includes(currentExercise.exercise_id);
+  }, [workout, currentExerciseIndex, completedExercises]);
+
   const { getWorkoutDetails } = useWorkoutDatabase();
+
+  const checkIfWorkoutIsCompleted = useCallback(
+    (exerciseId: string) => {
+      return completedExercises.includes(exerciseId);
+    },
+    [completedExercises],
+  );
 
   const handleGetWorkoutDetails = useCallback(
     async (workoutId: string) => {
@@ -148,7 +166,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
   return (
     <PageWrapper navigate={navigation} hideNavBar selectedButton="WorkingOut">
       <ScrollView style={{ padding: 20 }}>
-        <View style={styles.highlightCard}>
+        {/* <View style={styles.highlightCard}>
           <View
             style={{
               flexDirection: "row",
@@ -162,11 +180,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
             </Text>
             <Icon
               name="check-circle"
-              color={
-                completedExercises.includes(currentExercise.exercise_id)
-                  ? "lightgreen"
-                  : "lightgray"
-              }
+              color={isCurrentExerciseCompleted ? "lightgreen" : "lightgray"}
               size={28}
               onPress={() =>
                 toggleExerciseComplete(currentExercise.exercise_id)
@@ -176,36 +190,65 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
           <Text style={{ color: "#fff", marginTop: 5 }}>
             {`Exercícios: ${exercises.length}`}
           </Text>
-        </View>
+        </View> */}
         <View>
           <Separator text="Exercises" />
 
           <View
             style={{
               flexDirection: "row",
-              alignItems: "baseline",
+              justifyContent: "space-between",
+              alignItems: "center",
               gap: 10,
             }}
           >
-            <Text
+            <View
               style={{
-                fontFamily: "Montserrat",
-                fontSize: 18,
-                fontWeight: "bold",
-                marginVertical: 10,
+                flexDirection: "row",
+                alignItems: "baseline",
+                gap: 5,
               }}
             >
-              {currentExercise.exercise_name}
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Montserrat",
-                fontSize: 12,
-                fontWeight: "light",
-              }}
-            >
-              {`${currentExercise.sets.length} Sets`}
-            </Text>
+              <Text
+                style={{
+                  fontFamily: "Montserrat",
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginVertical: 10,
+                }}
+              >
+                {currentExercise.exercise_name}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Montserrat",
+                  fontSize: 12,
+                  fontWeight: "light",
+                }}
+              >
+                {`${currentExercise.sets.length} Sets`}
+              </Text>
+            </View>
+            <View>
+              <TouchableOpacity
+                onPress={() =>
+                  toggleExerciseComplete(currentExercise.exercise_id)
+                }
+                style={
+                  isCurrentExerciseCompleted
+                    ? styles.activeCompletedButton
+                    : styles.completedButton
+                }
+              >
+                <Text
+                  style={{
+                    color: isCurrentExerciseCompleted ? "#fff" : "#000",
+                  }}
+                >
+                  Completed
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {currentExercise.sets.map((set) => {
@@ -288,7 +331,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
         onClose={() => setExerciseListModalVisible(false)}
       >
         <Modal.Header
-          title="Lista de Exercícios"
+          title={workout.workout_name}
           onClose={() => setExerciseListModalVisible(false)}
         />
         <Modal.Content>
@@ -299,11 +342,25 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
 
               const isCurrent = currentExerciseIndex === index;
 
+              const isCompleted = checkIfWorkoutIsCompleted(
+                exercise.exercise_id,
+              );
+
+              const textColor = isCurrent
+                ? "#fff"
+                : isCompleted
+                  ? "#fff"
+                  : "#000";
+
               return (
                 <TouchableOpacity
                   key={exercise.exercise_id}
                   style={{
-                    backgroundColor: isCurrent ? "#00A8E8" : "#F2F2F2",
+                    backgroundColor: isCurrent
+                      ? "#00A8E8"
+                      : isCompleted
+                        ? "#4CAF50"
+                        : "#F2F2F2",
                     borderRadius: 10,
                     padding: 15,
                     marginVertical: 10,
@@ -319,13 +376,16 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
                     style={{
                       fontSize: 16,
                       fontWeight: "bold",
-                      color: isCurrent ? "#fff" : "#000",
+                      color: textColor,
                     }}
                   >
                     {exercise.exercise_name}
                   </Text>
                   <Text
-                    style={{ color: isCurrent ? "#fff" : "#000", marginTop: 4 }}
+                    style={{
+                      color: textColor,
+                      marginTop: 4,
+                    }}
                   >
                     {setDescription}
                   </Text>
@@ -353,5 +413,19 @@ const styles = StyleSheet.create({
     padding: 15,
     marginVertical: 10,
     marginHorizontal: 30,
+  },
+  completedButton: {
+    backgroundColor: "#F2F2F2",
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    marginTop: 10,
+  },
+  activeCompletedButton: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    marginTop: 10,
   },
 });
