@@ -2,7 +2,10 @@ import { Modal } from "@/components/Modal/Modal";
 import { PageWrapper } from "@/components/PageWrapper/PageWrapper";
 import { Separator } from "@/components/Separator/Separator";
 import { WorkoutDetails } from "@/database/types";
-import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
+import {
+  CompletedWorkoutData,
+  useWorkoutDatabase,
+} from "@/database/useWorkoutDatabase";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -55,7 +58,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
     return completedExercises.includes(currentExercise.exercise_id);
   }, [workout, currentExerciseIndex, completedExercises]);
 
-  const { getWorkoutDetails } = useWorkoutDatabase();
+  const { getWorkoutDetails, saveCompletedWorkout } = useWorkoutDatabase();
 
   const checkIfWorkoutIsCompleted = useCallback(
     (exerciseId: string) => {
@@ -143,6 +146,46 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
       handleGetWorkoutDetails(workoutId);
     }
   }, [workoutId, handleGetWorkoutDetails, loading]);
+
+  function buildCompletedWorkoutData(
+    workout: WorkoutDetails,
+    inputState: WorkoutInputState,
+  ): CompletedWorkoutData {
+    return {
+      workout_id: workout.workout_id,
+      workout_name: workout.workout_name,
+      date: new Date().toISOString(),
+      completed_exercises: workout.exercises.map((exercise) => {
+        const sets = inputState[exercise.exercise_id];
+        const completed_sets = Object.entries(sets).map(
+          ([setNumber, setData]) => ({
+            setNumber: setNumber,
+            weight: setData.weight,
+            repetitions: setData.reps,
+          }),
+        );
+
+        return {
+          exerciseId: exercise.exercise_id,
+          exerciseName: exercise.exercise_name,
+          completed_sets,
+        };
+      }),
+    };
+  }
+
+  const handleFinishWorkout = async () => {
+    if (!workout) return;
+
+    const dataToSave = buildCompletedWorkoutData(workout, inputState);
+    try {
+      await saveCompletedWorkout(dataToSave);
+      Alert.alert("Treino salvo com sucesso!");
+      navigation.navigate("Home"); // ou qualquer tela de destino
+    } catch {
+      Alert.alert("Erro", "Não foi possível salvar o treino.");
+    }
+  };
 
   if (loading) {
     return (
@@ -320,7 +363,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
             Math.min(prev + 1, exercises.length - 1),
           )
         }
-        onFinish={() => Alert.alert("Finish pressed")}
+        onFinish={handleFinishWorkout}
         onOpenExercises={() => setExerciseListModalVisible(true)}
         previousDisabled={currentExerciseIndex === 0}
         nextDisabled={currentExerciseIndex >= exercises.length - 1}

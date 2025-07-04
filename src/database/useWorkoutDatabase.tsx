@@ -241,51 +241,44 @@ export function useWorkoutDatabase() {
     }
   }
 
-  async function getWorkoutHistory(
-    workoutId: string,
-  ): Promise<CompletedWorkout[]> {
+  async function getWorkoutHistory(): Promise<CompletedWorkout[]> {
     try {
-      console.log(
-        "🚀 Fetching all completed workouts for workout ID:",
-        workoutId,
-      );
+      console.log("🚀 Fetching all completed workouts...");
 
-      // Query para buscar TODOS os completed_workouts associados ao workout_id
+      // 1️⃣ Buscar todos os treinos completos
       const completedWorkoutsQuery = `
-                SELECT id, workout_id, workout_name, date
-                FROM completed_workouts
-                WHERE workout_id = ?
-                ORDER BY date DESC;
-            `;
+      SELECT id, workout_id, workout_name, date
+      FROM completed_workouts
+      ORDER BY date DESC;
+    `;
       const workoutStatement = await database.prepareAsync(
         completedWorkoutsQuery,
       );
       const workoutResult =
-        await workoutStatement.executeAsync<CompletedWorkout>([workoutId]);
+        await workoutStatement.executeAsync<CompletedWorkout>();
       const workoutData = await workoutResult.getAllAsync();
 
       if (workoutData.length === 0) {
-        console.log("❌ No completed workouts found for the given workout ID.");
+        console.log("❌ No completed workouts found.");
         return [];
       }
 
       const completedWorkouts: CompletedWorkout[] = [];
 
-      // Query para buscar os exercícios relacionados
+      // 2️⃣ Preparar queries auxiliares
       const completedExercisesQuery = `
-                SELECT id, completed_workout_id, name
-                FROM completed_exercises
-                WHERE completed_workout_id = ?;
-            `;
-
-      // Query para buscar os sets relacionados a cada exercício
+      SELECT id, completed_workout_id, name
+      FROM completed_exercises
+      WHERE completed_workout_id = ?;
+    `;
       const completedSetsQuery = `
-                SELECT id, set_number, repetitions, weight, completed_exercise_id
-                FROM completed_sets
-                WHERE completed_exercise_id = ?
-                ORDER BY set_number ASC;
-            `;
+      SELECT id, set_number, repetitions, weight, completed_exercise_id
+      FROM completed_sets
+      WHERE completed_exercise_id = ?
+      ORDER BY set_number ASC;
+    `;
 
+      // 3️⃣ Iterar sobre cada workout para buscar os exercícios e sets
       for (const workout of workoutData) {
         const exercisesStatement = await database.prepareAsync(
           completedExercisesQuery,
@@ -326,13 +319,9 @@ export function useWorkoutDatabase() {
         await exercisesStatement.finalizeAsync();
       }
 
-      console.log(
-        "🎉 All completed workouts fetched successfully:",
-        completedWorkouts,
-      );
-
       await workoutStatement.finalizeAsync();
 
+      console.log("🎉 All completed workouts fetched successfully!");
       return completedWorkouts;
     } catch (error) {
       console.error("❌ Error fetching completed workouts:", error);
@@ -413,6 +402,7 @@ export function useWorkoutDatabase() {
       throw error;
     }
   }
+
   async function hardResetProject() {
     console.log("🚧 Resetting database...");
 

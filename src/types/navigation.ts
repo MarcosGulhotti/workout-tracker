@@ -8,6 +8,7 @@ export type RootStackParamList = {
   ListAllWorkouts: undefined;
   WorkoutDetails: { workoutId: string };
   WorkingOut: { workoutId: string };
+  History: undefined; // No params expected
 };
 
 type KeyOfRootStackParamList = keyof RootStackParamList;

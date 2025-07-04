@@ -6,6 +6,7 @@ import { enableScreens } from "react-native-screens";
 import { RootStackParamList } from "../types/navigation";
 import { CreateExercises } from "./CreateExercises/CreateExercises";
 import { CreateWorkout } from "./CreateWorkout/CreateWorkout";
+import { History } from "./History/History";
 import { Home } from "./Home/Home";
 import { ListAllWorkouts } from "./ListAllWorkouts/ListAllWorkouts";
 import { WorkingOut } from "./WorkingOut/WorkingOut";
@@ -42,6 +43,7 @@ export function Router() {
           <Stack.Screen name="ListAllWorkouts" component={ListAllWorkouts} />
           <Stack.Screen name="WorkoutDetails" component={WorkoutDetailsPage} />
           <Stack.Screen name="WorkingOut" component={WorkingOut} />
+          <Stack.Screen name="History" component={History} />
         </Stack.Navigator>
       </NavigationContainer>
     </SQLiteProvider>
