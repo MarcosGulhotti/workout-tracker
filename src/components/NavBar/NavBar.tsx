@@ -1,5 +1,5 @@
 import { NavigationOptions } from "@/screens";
-import { StyleSheet, Text, View } from "react-native";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import { Icon } from "react-native-elements";
 
 type NavBarProps = {
@@ -13,7 +13,7 @@ export function NavBar({ handleNavigate, selectedButton }: NavBarProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={styles.container} pointerEvents="auto">
       <View
         style={
           selectedButton === "Home" ? styles.selectedIcon : styles.iconContainer
@@ -63,7 +63,7 @@ export function NavBar({ handleNavigate, selectedButton }: NavBarProps) {
         />
         <Text style={styles.styledText}>History</Text>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -74,6 +74,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     borderTopWidth: 1,
     borderTopColor: "#E0E0E0",
+    backgroundColor: "#fff",
+    zIndex: 1,
   },
   iconContainer: {
     justifyContent: "center",

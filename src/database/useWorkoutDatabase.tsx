@@ -241,11 +241,27 @@ export function useWorkoutDatabase() {
     }
   }
 
+  /**
+   * Retrieves the complete workout history from the database.
+   *
+   * The function performs a three-step process:
+   * 1. Fetches all completed workouts ordered by date (most recent first)
+   * 2. For each workout, fetches its associated exercises
+   * 3. For each exercise, fetches its associated sets with their details
+   *
+   * The data is structured hierarchically as:
+   * - CompletedWorkout
+   *   - CompletedExercise[]
+   *     - CompletedSet[]
+   *
+   * @returns {Promise<CompletedWorkout[]>} A promise that resolves to an array of completed workouts
+   * with their nested exercises and sets. Returns an empty array if no workouts are found.
+   *
+   * @throws {Error} If there's a database error during any of the fetch operations
+   */
   async function getWorkoutHistory(): Promise<CompletedWorkout[]> {
     try {
-      console.log("🚀 Fetching all completed workouts...");
-
-      // 1️⃣ Buscar todos os treinos completos
+      // Fetch all completed workouts
       const completedWorkoutsQuery = `
       SELECT id, workout_id, workout_name, date
       FROM completed_workouts
@@ -259,13 +275,12 @@ export function useWorkoutDatabase() {
       const workoutData = await workoutResult.getAllAsync();
 
       if (workoutData.length === 0) {
-        console.log("❌ No completed workouts found.");
         return [];
       }
 
       const completedWorkouts: CompletedWorkout[] = [];
 
-      // 2️⃣ Preparar queries auxiliares
+      // Prepare auxiliary queries
       const completedExercisesQuery = `
       SELECT id, completed_workout_id, name
       FROM completed_exercises
@@ -278,7 +293,7 @@ export function useWorkoutDatabase() {
       ORDER BY set_number ASC;
     `;
 
-      // 3️⃣ Iterar sobre cada workout para buscar os exercícios e sets
+      // Iterate over each workout to fetch exercises and sets
       for (const workout of workoutData) {
         const exercisesStatement = await database.prepareAsync(
           completedExercisesQuery,
@@ -321,10 +336,8 @@ export function useWorkoutDatabase() {
 
       await workoutStatement.finalizeAsync();
 
-      console.log("🎉 All completed workouts fetched successfully!");
       return completedWorkouts;
     } catch (error) {
-      console.error("❌ Error fetching completed workouts:", error);
       throw error;
     }
   }

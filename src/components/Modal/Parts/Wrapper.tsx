@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, View } from "react-native";
+import { Animated, Dimensions, StyleSheet, View } from "react-native";
+
+const screenHeight = Dimensions.get("window").height;
 
 type ModalWrapperProps = {
   children: React.ReactNode;
@@ -13,31 +15,20 @@ type ModalWrapperProps = {
  * @param children - The content to render inside the modal.
  * @param visible - Controls the visibility state of the modal. Defaults to true.
  * @param onClose - Optional callback fired after the modal finishes closing.
- *
- * @remarks
- * The modal animates into view by sliding up and fading in the background overlay, and
- * animates out by sliding down and fading out the overlay. Once the closing animation finishes,
- * it triggers the onClose callback (if provided) and removes itself from the render tree.
  */
 export function ModalWrapper({
   children,
-  visible = true, //TODO should start false
+  visible = true,
   onClose,
 }: ModalWrapperProps) {
   const [shouldRender, setShouldRender] = useState(visible);
 
-  // Slide up/down animation
-  const slideAnim = useRef(new Animated.Value(300)).current;
-
-  // Fade in/out animation for the background overlay
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      // If the modal is about to open, ensure we render it first
       setShouldRender(true);
-
-      // Animate in parallel: fade the background in AND slide the content up
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -51,7 +42,6 @@ export function ModalWrapper({
         }),
       ]).start();
     } else {
-      // Animate background fade out and slide down
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -59,28 +49,26 @@ export function ModalWrapper({
           useNativeDriver: true,
         }),
         Animated.timing(slideAnim, {
-          toValue: 300,
+          toValue: screenHeight,
           duration: 300,
           useNativeDriver: true,
         }),
       ]).start(() => {
-        // Once animation finishes, remove from render tree
         setShouldRender(false);
         onClose?.();
       });
     }
-  }, [fadeAnim, onClose, slideAnim, visible]);
+  }, [visible, fadeAnim, slideAnim, onClose]);
 
-  // If we no longer need to be visible, skip rendering altogether
-  if (!shouldRender) {
-    return null;
-  }
+  if (!shouldRender) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Background overlay that fades in/out */}
+    <View
+      style={[StyleSheet.absoluteFill, { zIndex: 100 }]}
+      pointerEvents="box-none"
+    >
       <Animated.View
-        style={[styles.overlay, { opacity: fadeAnim }]}
+        style={[styles.overlay, { opacity: fadeAnim }]} // background fade
         onTouchEnd={onClose}
         {...{
           onStartShouldSetResponder: () => true,
@@ -92,7 +80,6 @@ export function ModalWrapper({
         }}
       />
 
-      {/* Modal content that slides up/down */}
       <Animated.View
         style={[styles.content, { transform: [{ translateY: slideAnim }] }]}
       >
@@ -105,7 +92,7 @@ export function ModalWrapper({
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "#0000007f",
   },
   content: {
     position: "absolute",
@@ -113,7 +100,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "white",
-    height: "60%",
+    height: "85%",
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
   },
