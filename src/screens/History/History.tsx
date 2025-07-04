@@ -1,3 +1,6 @@
+import BottomSheet, {
+  BottomSheetRefProps,
+} from "@/components/BottomSheet/BottomSheet";
 import HistoryWorkoutCard from "@/components/Cards/HistoryWorkoutCard/HistoryWorkoutCard";
 import { LabeledTextInput } from "@/components/LabeledTextInput/LabeledTextInput";
 import { Modal } from "@/components/Modal/Modal";
@@ -8,7 +11,7 @@ import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { NavigationPageProps } from "@/types/navigation";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Button,
   Modal as NativeModal,
@@ -37,6 +40,17 @@ export function History({ navigation }: NavigationPageProps) {
   const [showEndPicker, setShowEndPicker] = useState(false);
 
   const [showFilters, setShowFilters] = useState(false);
+
+  const ref = useRef<BottomSheetRefProps>(null);
+
+  const onPress = useCallback(() => {
+    const isActive = ref?.current?.isActive();
+    if (isActive) {
+      ref?.current?.scrollTo(0);
+    } else {
+      ref?.current?.scrollTo(-500);
+    }
+  }, []);
 
   const filteredWorkouts = useMemo(
     () => filterCompletedWorkouts(workouts, { searchTerm, startDate, endDate }),
@@ -76,7 +90,7 @@ export function History({ navigation }: NavigationPageProps) {
         showAddButton: false,
         showSearchButton: false,
         customButton: "tune",
-        customButtonOnPress: () => setShowFilters((prev) => !prev),
+        customButtonOnPress: onPress,
         modalOpen: showFilters || detailsModalVisible,
       }}
       hideNavBar={showFilters || detailsModalVisible}
@@ -183,7 +197,59 @@ export function History({ navigation }: NavigationPageProps) {
         </Modal.Content>
       </Modal.Wrapper>
 
-      <Modal.Wrapper
+      <BottomSheet ref={ref}>
+        <ScrollView style={{ marginTop: 20 }}>
+          <LabeledTextInput
+            label="Nome do treino:"
+            placeholder="Buscar por nome do treino..."
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            style={{ marginHorizontal: 20 }}
+            onPress={() => {
+              const isActive = ref?.current?.isActive();
+              if (isActive) {
+                ref?.current?.scrollTo(-700);
+              }
+            }}
+            onSubmitEditing={() => {
+              const isActive = ref?.current?.isActive();
+              if (isActive) {
+                ref?.current?.scrollTo(-500);
+              }
+            }}
+          />
+          <View style={styles.dateFilters}>
+            <View style={styles.container}>
+              <Text style={styles.dateInputLabel}>Data de início:</Text>
+              <TouchableOpacity
+                onPress={() => setShowStartPicker(true)}
+                style={styles.dateInput}
+              >
+                <Text style={{ color: startDate ? "#000" : "#888" }}>
+                  {startDate
+                    ? startDate.toLocaleDateString("pt-BR")
+                    : "Selecionar data de início"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.container}>
+              <Text style={styles.dateInputLabel}>Data de fim:</Text>
+              <TouchableOpacity
+                onPress={() => setShowEndPicker(true)}
+                style={styles.dateInput}
+              >
+                <Text style={{ color: endDate ? "#000" : "#888" }}>
+                  {endDate
+                    ? endDate.toLocaleDateString("pt-BR")
+                    : "Selecionar data de fim"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </BottomSheet>
+
+      {/* <Modal.Wrapper
         visible={showFilters}
         onClose={() => {
           setTimeout(() => {
@@ -245,7 +311,7 @@ export function History({ navigation }: NavigationPageProps) {
             variant: "primary",
           }}
         />
-      </Modal.Wrapper>
+      </Modal.Wrapper> */}
     </PageWrapper>
   );
 }

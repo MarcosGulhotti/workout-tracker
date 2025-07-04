@@ -19,6 +19,7 @@ interface LabeledTextInputProps {
   type?: KeyboardTypeOptions;
   onSubmitEditing?: () => void;
   error?: boolean;
+  onPress?: () => void;
 }
 
 export function LabeledTextInput({
@@ -27,6 +28,7 @@ export function LabeledTextInput({
   inputStyle,
   onChangeText,
   onSubmitEditing,
+  onPress,
   placeholder = "",
   secureTextEntry = false,
   type = "default",
@@ -50,6 +52,7 @@ export function LabeledTextInput({
         onSubmitEditing={onSubmitEditing}
         onEndEditing={onSubmitEditing}
         getValue={() => Promise.resolve(value)}
+        onPress={onPress}
       />
     </View>
   );

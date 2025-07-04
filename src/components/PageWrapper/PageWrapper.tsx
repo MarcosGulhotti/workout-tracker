@@ -9,6 +9,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Header, HeaderProps } from "../Header/Header";
 import { NavBar } from "../NavBar/NavBar";
 
@@ -60,29 +61,31 @@ export function PageWrapper({
   }, [modalOpen]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFillObject,
-          {
-            backgroundColor: "rgba(0,0,0,0.5)",
-            opacity: fadeAnim,
-          },
-        ]}
-        pointerEvents={modalOpen ? "auto" : "none"}
-      />
-      <StatusBar barStyle={barStyle} />
-      <Header navigate={navigate} {...headerProps} />
-      <View style={styles.container}>{children}</View>
-      {!hideNavBar && (
-        <Animated.View style={{ opacity: navBarOpacity }}>
-          <NavBar
-            selectedButton={selectedButton}
-            handleNavigate={(screen) => navigate.navigate(screen as any)}
-          />
-        </Animated.View>
-      )}
-    </SafeAreaView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              backgroundColor: "rgba(0,0,0,0.5)",
+              opacity: fadeAnim,
+            },
+          ]}
+          pointerEvents={modalOpen ? "auto" : "none"}
+        />
+        <StatusBar barStyle={barStyle} />
+        <Header navigate={navigate} {...headerProps} />
+        <View style={styles.container}>{children}</View>
+        {!hideNavBar && (
+          <Animated.View style={{ opacity: navBarOpacity }}>
+            <NavBar
+              selectedButton={selectedButton}
+              handleNavigate={(screen) => navigate.navigate(screen as any)}
+            />
+          </Animated.View>
+        )}
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
