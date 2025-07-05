@@ -12,6 +12,7 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Header, HeaderProps } from "../Header/Header";
 import { NavBar } from "../NavBar/NavBar";
+import { Overlay } from "../Overlay/Overlay";
 
 export type PageWrapperProps = {
   barStyle?: StatusBarStyle;
@@ -19,6 +20,7 @@ export type PageWrapperProps = {
   navigate: ScreenNavigationProp;
   hideNavBar?: boolean;
   headerProps?: Partial<HeaderProps>;
+  closeBackdrop: () => void;
 };
 
 /**
@@ -36,6 +38,7 @@ export function PageWrapper({
   hideNavBar,
   headerProps,
   barStyle = "default",
+  closeBackdrop,
 }: PropsWithChildren<PageWrapperProps>) {
   const { modalOpen } = headerProps || {};
 
@@ -63,15 +66,10 @@ export function PageWrapper({
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-        <Animated.View
-          style={[
-            StyleSheet.absoluteFillObject,
-            {
-              backgroundColor: "rgba(0,0,0,0.5)",
-              opacity: fadeAnim,
-            },
-          ]}
-          pointerEvents={modalOpen ? "auto" : "none"}
+        <Overlay
+          visible={modalOpen ?? false}
+          onPress={closeBackdrop}
+          style={{ zIndex: 2 }}
         />
         <StatusBar barStyle={barStyle} />
         <Header navigate={navigate} {...headerProps} />

@@ -41,14 +41,18 @@ export function History({ navigation }: NavigationPageProps) {
 
   const [showFilters, setShowFilters] = useState(false);
 
+  const [isActive, setIsActive] = useState(false);
+
   const ref = useRef<BottomSheetRefProps>(null);
 
   const onPress = useCallback(() => {
     const isActive = ref?.current?.isActive();
     if (isActive) {
       ref?.current?.scrollTo(0);
+      setIsActive(false);
     } else {
       ref?.current?.scrollTo(-500);
+      setIsActive(true);
     }
   }, []);
 
@@ -91,9 +95,13 @@ export function History({ navigation }: NavigationPageProps) {
         showSearchButton: false,
         customButton: "tune",
         customButtonOnPress: onPress,
-        modalOpen: showFilters || detailsModalVisible,
+        modalOpen: isActive,
       }}
       hideNavBar={showFilters || detailsModalVisible}
+      closeBackdrop={() => {
+        setIsActive(false);
+        ref?.current?.scrollTo(0);
+      }}
     >
       <ScrollView>
         <Separator text="History" />
@@ -197,7 +205,7 @@ export function History({ navigation }: NavigationPageProps) {
         </Modal.Content>
       </Modal.Wrapper>
 
-      <BottomSheet ref={ref}>
+      <BottomSheet ref={ref} closeBackdrop={() => setIsActive(false)}>
         <ScrollView style={{ marginTop: 20 }}>
           <LabeledTextInput
             label="Nome do treino:"

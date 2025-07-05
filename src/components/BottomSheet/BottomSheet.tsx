@@ -2,11 +2,12 @@ import React, { useCallback, useImperativeHandle } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-    Extrapolation,
-    interpolate,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
 } from "react-native-reanimated";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -15,6 +16,7 @@ const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 50;
 
 type BottomSheetProps = {
   children?: React.ReactNode;
+  closeBackdrop: () => void;
 };
 
 export type BottomSheetRefProps = {
@@ -23,7 +25,7 @@ export type BottomSheetRefProps = {
 };
 
 const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
-  ({ children }, ref) => {
+  ({ children, closeBackdrop }, ref) => {
     const translateY = useSharedValue(0);
     const active = useSharedValue(false);
 
@@ -31,10 +33,13 @@ const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
       (destination: number) => {
         "worklet";
         active.value = destination !== 0;
+        if (destination === 0) {
+          runOnJS(closeBackdrop)?.();
+        }
 
         translateY.value = withSpring(destination, { damping: 50 });
       },
-      [active, translateY],
+      [active, closeBackdrop, translateY],
     );
 
     const isActive = useCallback(() => {
