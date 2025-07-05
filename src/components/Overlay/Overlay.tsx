@@ -1,18 +1,12 @@
 import React from "react";
-import {
-    StyleSheet,
-    TouchableWithoutFeedback,
-    View,
-    ViewStyle,
-} from "react-native";
+import { StyleSheet, TouchableWithoutFeedback, View } from "react-native";
 
 type OverlayProps = {
   visible: boolean;
   onPress: () => void;
-  style?: ViewStyle;
 };
 
-export function Overlay({ visible, onPress, style }: OverlayProps) {
+export function Overlay({ visible, onPress }: OverlayProps) {
   return (
     <TouchableWithoutFeedback onPress={onPress}>
       <View
@@ -20,7 +14,6 @@ export function Overlay({ visible, onPress, style }: OverlayProps) {
         style={[
           StyleSheet.absoluteFillObject,
           styles.overlay,
-          style,
           !visible && styles.hidden,
         ]}
       />
@@ -31,6 +24,7 @@ export function Overlay({ visible, onPress, style }: OverlayProps) {
 const styles = StyleSheet.create({
   overlay: {
     backgroundColor: "#0000007f",
+    zIndex: 2,
   },
   hidden: {
     backgroundColor: "transparent",

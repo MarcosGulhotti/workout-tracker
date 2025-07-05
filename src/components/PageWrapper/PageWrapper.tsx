@@ -1,8 +1,7 @@
 import { NavigationOptions } from "@/screens";
 import { ScreenNavigationProp } from "@/types/navigation";
-import { PropsWithChildren, useEffect, useRef } from "react";
+import { PropsWithChildren } from "react";
 import {
-  Animated,
   SafeAreaView,
   StatusBar,
   StatusBarStyle,
@@ -20,7 +19,8 @@ export type PageWrapperProps = {
   navigate: ScreenNavigationProp;
   hideNavBar?: boolean;
   headerProps?: Partial<HeaderProps>;
-  closeBackdrop: () => void;
+  hasBottomSheet?: boolean;
+  closeBackdrop?: () => void;
 };
 
 /**
@@ -37,50 +37,29 @@ export function PageWrapper({
   navigate,
   hideNavBar,
   headerProps,
-  barStyle = "default",
   closeBackdrop,
+  hasBottomSheet = false,
+  barStyle = "default",
 }: PropsWithChildren<PageWrapperProps>) {
-  const { modalOpen } = headerProps || {};
-
-  const fadeAnim = useRef(new Animated.Value(modalOpen ? 1 : 0)).current;
-  const navBarOpacity = useRef(new Animated.Value(modalOpen ? 0 : 1)).current;
-
-  useEffect(() => {
-    Animated.timing(navBarOpacity, {
-      toValue: modalOpen ? 0 : 1,
-      duration: 150,
-      useNativeDriver: true,
-    }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalOpen]);
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: modalOpen ? 1 : 0,
-      duration: 150,
-      useNativeDriver: true,
-    }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalOpen]);
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
         <Overlay
-          visible={modalOpen ?? false}
-          onPress={closeBackdrop}
-          style={{ zIndex: 2 }}
+          visible={hasBottomSheet}
+          onPress={() => {
+            if (closeBackdrop) {
+              closeBackdrop();
+            }
+          }}
         />
         <StatusBar barStyle={barStyle} />
         <Header navigate={navigate} {...headerProps} />
         <View style={styles.container}>{children}</View>
         {!hideNavBar && (
-          <Animated.View style={{ opacity: navBarOpacity }}>
-            <NavBar
-              selectedButton={selectedButton}
-              handleNavigate={(screen) => navigate.navigate(screen as any)}
-            />
-          </Animated.View>
+          <NavBar
+            selectedButton={selectedButton}
+            handleNavigate={(screen) => navigate.navigate(screen as any)}
+          />
         )}
       </SafeAreaView>
     </GestureHandlerRootView>

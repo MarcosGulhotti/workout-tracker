@@ -3,7 +3,6 @@ import BottomSheet, {
 } from "@/components/BottomSheet/BottomSheet";
 import HistoryWorkoutCard from "@/components/Cards/HistoryWorkoutCard/HistoryWorkoutCard";
 import { LabeledTextInput } from "@/components/LabeledTextInput/LabeledTextInput";
-import { Modal } from "@/components/Modal/Modal";
 import { PageWrapper } from "@/components/PageWrapper/PageWrapper";
 import { Separator } from "@/components/Separator/Separator";
 import { CompletedWorkout } from "@/database/types";
@@ -26,11 +25,15 @@ import {
 import { filterCompletedWorkouts } from "./utils/filters";
 
 export function History({ navigation }: NavigationPageProps) {
+  const { getWorkoutHistory } = useWorkoutDatabase();
+
+  const filtersRef = useRef<BottomSheetRefProps>(null);
+  const cardRef = useRef<BottomSheetRefProps>(null);
+
   const [loading, setLoading] = useState(false);
   const [workouts, setWorkouts] = useState<CompletedWorkout[]>([]);
   const [detailedWorkout, setDetailedWorkout] =
     useState<CompletedWorkout | null>(null);
-  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -39,29 +42,28 @@ export function History({ navigation }: NavigationPageProps) {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
-  const [showFilters, setShowFilters] = useState(false);
-
-  const [isActive, setIsActive] = useState(false);
-
-  const ref = useRef<BottomSheetRefProps>(null);
-
-  const onPress = useCallback(() => {
-    const isActive = ref?.current?.isActive();
-    if (isActive) {
-      ref?.current?.scrollTo(0);
-      setIsActive(false);
-    } else {
-      ref?.current?.scrollTo(-500);
-      setIsActive(true);
-    }
-  }, []);
+  const [filtersActive, setFiltersActive] = useState(false);
+  const [cardActive, setCardActive] = useState(false);
 
   const filteredWorkouts = useMemo(
     () => filterCompletedWorkouts(workouts, { searchTerm, startDate, endDate }),
     [workouts, searchTerm, startDate, endDate],
   );
 
-  const { getWorkoutHistory } = useWorkoutDatabase();
+  const hasBottomSheet = useMemo(() => {
+    return !!filtersActive || !!cardActive;
+  }, [cardActive, filtersActive]);
+
+  const onPress = useCallback(() => {
+    const isActive = filtersRef?.current?.isActive();
+    if (isActive) {
+      filtersRef?.current?.scrollTo(0);
+      setFiltersActive(false);
+    } else {
+      filtersRef?.current?.scrollTo(-500);
+      setFiltersActive(true);
+    }
+  }, []);
 
   const handleGetWorkoutHistory = useCallback(async () => {
     setLoading(true);
@@ -72,7 +74,14 @@ export function History({ navigation }: NavigationPageProps) {
 
   const handleSetDetailedWorkout = useCallback((workout: CompletedWorkout) => {
     setDetailedWorkout(workout);
-    setDetailsModalVisible(true);
+    const isActive = cardRef?.current?.isActive();
+    if (isActive) {
+      cardRef?.current?.scrollTo(0);
+      setCardActive(false);
+    } else {
+      cardRef?.current?.scrollTo(-500);
+      setCardActive(true);
+    }
   }, []);
 
   useFocusEffect(
@@ -87,20 +96,18 @@ export function History({ navigation }: NavigationPageProps) {
     <PageWrapper
       navigate={navigation}
       selectedButton="History"
-      barStyle={
-        showFilters || detailsModalVisible ? "light-content" : "dark-content"
-      }
       headerProps={{
         showAddButton: false,
         showSearchButton: false,
         customButton: "tune",
         customButtonOnPress: onPress,
-        modalOpen: isActive,
       }}
-      hideNavBar={showFilters || detailsModalVisible}
+      hasBottomSheet={hasBottomSheet}
       closeBackdrop={() => {
-        setIsActive(false);
-        ref?.current?.scrollTo(0);
+        setFiltersActive(false);
+        setCardActive(false);
+        filtersRef?.current?.scrollTo(0);
+        cardRef?.current?.scrollTo(0);
       }}
     >
       <ScrollView>
@@ -175,7 +182,7 @@ export function History({ navigation }: NavigationPageProps) {
         </TouchableWithoutFeedback>
       </NativeModal>
 
-      <Modal.Wrapper
+      {/* <Modal.Wrapper
         visible={detailsModalVisible}
         onClose={() => setDetailsModalVisible(false)}
       >
@@ -203,9 +210,31 @@ export function History({ navigation }: NavigationPageProps) {
               ))}
           </ScrollView>
         </Modal.Content>
-      </Modal.Wrapper>
-
-      <BottomSheet ref={ref} closeBackdrop={() => setIsActive(false)}>
+      </Modal.Wrapper> */}
+      <BottomSheet ref={cardRef} closeBackdrop={() => setCardActive(false)}>
+        <ScrollView>
+          {detailedWorkout &&
+            detailedWorkout.completed_exercises.map((exercise, index) => (
+              <View key={index}>
+                <Text style={{ fontWeight: "bold", fontSize: 16 }}>
+                  {exercise.name} - {exercise.completed_sets.length} Sets
+                </Text>
+                {exercise.completed_sets.map((set, setIndex) => (
+                  <View key={setIndex} style={{ marginLeft: 10 }}>
+                    <Text>
+                      Set {set.set_number}: {set.repetitions} reps at{" "}
+                      {set.weight} kg
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+        </ScrollView>
+      </BottomSheet>
+      <BottomSheet
+        ref={filtersRef}
+        closeBackdrop={() => setFiltersActive(false)}
+      >
         <ScrollView style={{ marginTop: 20 }}>
           <LabeledTextInput
             label="Nome do treino:"
@@ -214,15 +243,15 @@ export function History({ navigation }: NavigationPageProps) {
             onChangeText={setSearchTerm}
             style={{ marginHorizontal: 20 }}
             onPress={() => {
-              const isActive = ref?.current?.isActive();
+              const isActive = filtersRef?.current?.isActive();
               if (isActive) {
-                ref?.current?.scrollTo(-700);
+                filtersRef?.current?.scrollTo(-700);
               }
             }}
             onSubmitEditing={() => {
-              const isActive = ref?.current?.isActive();
+              const isActive = filtersRef?.current?.isActive();
               if (isActive) {
-                ref?.current?.scrollTo(-500);
+                filtersRef?.current?.scrollTo(-500);
               }
             }}
           />

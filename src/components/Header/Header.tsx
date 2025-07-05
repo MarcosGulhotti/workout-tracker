@@ -9,7 +9,6 @@ export type HeaderProps = {
   showSearchButton?: boolean;
   customButton?: string;
   customButtonOnPress?: () => void;
-  modalOpen?: boolean;
 };
 
 export function Header({
@@ -18,14 +17,11 @@ export function Header({
   customButtonOnPress,
   showAddButton = true,
   showSearchButton = true,
-  modalOpen = false,
 }: HeaderProps) {
   const canGoBack = useMemo(() => navigate.canGoBack(), [navigate]);
 
   return (
-    <View
-      style={[styles.headerContent, { borderBottomWidth: modalOpen ? 0 : 1 }]}
-    >
+    <View style={[styles.headerContent]}>
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         {canGoBack && (
           <Icon
@@ -69,7 +65,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    borderBottomColor: "#E0E0E0",
   },
   headerText: {
     fontFamily: "Lato",

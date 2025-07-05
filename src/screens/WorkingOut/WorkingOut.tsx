@@ -1,4 +1,6 @@
-import { Modal } from "@/components/Modal/Modal";
+import BottomSheet, {
+  BottomSheetRefProps,
+} from "@/components/BottomSheet/BottomSheet";
 import { PageWrapper } from "@/components/PageWrapper/PageWrapper";
 import { Separator } from "@/components/Separator/Separator";
 import { WorkoutDetails } from "@/database/types";
@@ -6,7 +8,7 @@ import {
   CompletedWorkoutData,
   useWorkoutDatabase,
 } from "@/database/useWorkoutDatabase";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -37,6 +39,8 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
     () => (route.params ? route.params.workoutId : null),
     [route],
   );
+
+  const exercisesRef = useRef<BottomSheetRefProps>(null);
 
   const [loading, setLoading] = useState(true);
   const [workout, setWorkout] = useState<WorkoutDetails | null>(null);
@@ -135,6 +139,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
     });
   };
 
+  //TODO: Refactor this to use a more robust solution (useFocusEffect)
   useEffect(() => {
     if (!workoutId) {
       Alert.alert("Error", "No workout ID provided.");
@@ -207,7 +212,16 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
   const currentExercise = exercises[currentExerciseIndex];
 
   return (
-    <PageWrapper navigate={navigation} hideNavBar selectedButton="WorkingOut">
+    <PageWrapper
+      navigate={navigation}
+      hideNavBar
+      selectedButton="WorkingOut"
+      hasBottomSheet={exerciseListModalVisible}
+      closeBackdrop={() => {
+        setExerciseListModalVisible(false);
+        exercisesRef.current?.scrollTo(0);
+      }}
+    >
       <ScrollView style={{ padding: 20 }}>
         {/* <View style={styles.highlightCard}>
           <View
@@ -364,12 +378,84 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
           )
         }
         onFinish={handleFinishWorkout}
-        onOpenExercises={() => setExerciseListModalVisible(true)}
+        onOpenExercises={() => {
+          const isActive = exercisesRef.current?.isActive();
+          if (isActive) {
+            exercisesRef.current?.scrollTo(0);
+            setExerciseListModalVisible(false);
+          } else {
+            exercisesRef.current?.scrollTo(-500);
+            setExerciseListModalVisible(true);
+          }
+        }}
         previousDisabled={currentExerciseIndex === 0}
         nextDisabled={currentExerciseIndex >= exercises.length - 1}
       />
 
-      <Modal.Wrapper
+      <BottomSheet
+        ref={exercisesRef}
+        closeBackdrop={() => setExerciseListModalVisible(false)}
+      >
+        <ScrollView style={{ paddingVertical: 10 }}>
+          {exercises.map((exercise, index) => {
+            const totalSets = exercise.sets.length;
+            const setDescription = `${totalSets} ${totalSets === 1 ? "set" : "sets"}`;
+
+            const isCurrent = currentExerciseIndex === index;
+
+            const isCompleted = checkIfWorkoutIsCompleted(exercise.exercise_id);
+
+            const textColor = isCurrent
+              ? "#fff"
+              : isCompleted
+                ? "#fff"
+                : "#000";
+
+            return (
+              <TouchableOpacity
+                key={exercise.exercise_id}
+                style={{
+                  backgroundColor: isCurrent
+                    ? "#00A8E8"
+                    : isCompleted
+                      ? "#4CAF50"
+                      : "#F2F2F2",
+                  borderRadius: 10,
+                  padding: 15,
+                  marginVertical: 10,
+                  marginHorizontal: 30,
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  setCurrentExerciseIndex(index);
+                  setExerciseListModalVisible(false);
+                  exercisesRef.current?.scrollTo(0);
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "bold",
+                    color: textColor,
+                  }}
+                >
+                  {exercise.exercise_name}
+                </Text>
+                <Text
+                  style={{
+                    color: textColor,
+                    marginTop: 4,
+                  }}
+                >
+                  {setDescription}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </BottomSheet>
+
+      {/* <Modal.Wrapper
         visible={exerciseListModalVisible}
         onClose={() => setExerciseListModalVisible(false)}
       >
@@ -444,7 +530,7 @@ export function WorkingOut({ navigation, route }: NavigationPageProps) {
             }}
           />
         </Modal.Content>
-      </Modal.Wrapper>
+      </Modal.Wrapper> */}
     </PageWrapper>
   );
 }

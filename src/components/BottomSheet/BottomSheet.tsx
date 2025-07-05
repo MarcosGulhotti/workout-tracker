@@ -1,5 +1,5 @@
 import React, { useCallback, useImperativeHandle } from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Button, Dimensions, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Extrapolation,
@@ -17,6 +17,10 @@ const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 50;
 type BottomSheetProps = {
   children?: React.ReactNode;
   closeBackdrop: () => void;
+  primaryButton?: {
+    title: string;
+    onPress: () => void;
+  };
 };
 
 export type BottomSheetRefProps = {
@@ -25,7 +29,7 @@ export type BottomSheetRefProps = {
 };
 
 const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
-  ({ children, closeBackdrop }, ref) => {
+  ({ children, closeBackdrop, primaryButton }, ref) => {
     const translateY = useSharedValue(0);
     const active = useSharedValue(false);
 
@@ -86,6 +90,14 @@ const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
       <GestureDetector gesture={gesture}>
         <Animated.View style={[styles.bottomSheetContainer, rBottomSheetStyle]}>
           <View style={styles.line} />
+          <View>
+            {primaryButton && (
+              <Button
+                title={primaryButton.title}
+                onPress={primaryButton.onPress}
+              />
+            )}
+          </View>
           {children}
         </Animated.View>
       </GestureDetector>
@@ -97,11 +109,11 @@ const styles = StyleSheet.create({
   bottomSheetContainer: {
     height: SCREEN_HEIGHT,
     width: "100%",
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#fff",
     position: "absolute",
     top: SCREEN_HEIGHT,
     borderRadius: 25,
-    zIndex: 99,
+    zIndex: 3,
   },
   line: {
     width: 75,

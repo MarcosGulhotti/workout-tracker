@@ -2,7 +2,6 @@ import { CompletedWorkout } from "@/database/types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Icon } from "react-native-elements";
 
 /**
  * Renders a list of CompletedWorkout cards.
@@ -21,7 +20,11 @@ export default function HistoryWorkoutCard({
   onPress: (workout: CompletedWorkout) => void;
 }) {
   return completedWorkouts.map((workout, index) => (
-    <View style={styles.createdExercisesContainer} key={index}>
+    <TouchableOpacity
+      onPress={() => onPress(workout)}
+      style={styles.createdExercisesContainer}
+      key={index}
+    >
       <View>
         <Text style={styles.title}>
           {workout.workout_name} -{" "}
@@ -31,13 +34,7 @@ export default function HistoryWorkoutCard({
           {workout.completed_exercises?.length ?? "No"} Completed Exercises
         </Text>
       </View>
-      <TouchableOpacity
-        style={{ width: 30, backgroundColor: "transparent" }}
-        onPress={() => onPress(workout)}
-      >
-        <Icon name="more-vert" color="#BDBDBD" />
-      </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   ));
 }
 

@@ -1,24 +1,21 @@
+import BottomSheet, {
+  BottomSheetRefProps,
+} from "@/components/BottomSheet/BottomSheet";
 import WorkoutCard from "@/components/Cards/WorkoutCard/WorkoutCard";
-import { Modal } from "@/components/Modal/Modal";
 import { Workout, WorkoutDetails } from "@/database/types";
 import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useEffect, useState } from "react";
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+import { useCallback, useRef, useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PageWrapper } from "../../components/PageWrapper/PageWrapper";
 import { Separator } from "../../components/Separator/Separator";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
+  const workoutDetailsRef = useRef<BottomSheetRefProps>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(false);
-  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [detailsModalIsVisible, setDetailsModalIsVisible] = useState(false);
   const [detailedWorkout, setDetailedWorkout] = useState<WorkoutDetails | null>(
     null,
   );
@@ -50,8 +47,17 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
         );
         return {} as WorkoutDetails;
       });
-
-      if (result) {
+      if (!result) {
+        return;
+      }
+      const isActive = workoutDetailsRef?.current?.isActive();
+      if (isActive) {
+        workoutDetailsRef?.current?.scrollTo(0);
+        setDetailsModalIsVisible(false);
+        setDetailedWorkout(null);
+      } else {
+        workoutDetailsRef?.current?.scrollTo(-500);
+        setDetailsModalIsVisible(true);
         setDetailedWorkout(result);
       }
     },
@@ -66,17 +72,17 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
     }, [handleListAllWorkouts, loading, workouts.length]),
   );
 
-  useEffect(() => {
-    if (!loading && workouts.length === 0) {
-      handleListAllWorkouts();
-    }
-  }, [handleListAllWorkouts, loading, workouts]);
-
   return (
     <PageWrapper
       navigate={navigation}
       selectedButton="ListAllWorkouts"
-      hideNavBar={detailsModalVisible}
+      hideNavBar={detailsModalIsVisible}
+      closeBackdrop={() => {
+        setDetailsModalIsVisible(false);
+        setDetailedWorkout(null);
+        workoutDetailsRef.current?.scrollTo(0);
+      }}
+      hasBottomSheet={detailsModalIsVisible}
     >
       <ScrollView style={styles.container}>
         <Separator text="Workouts" />
@@ -86,59 +92,41 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
             workouts={workouts}
             onPress={(workout) => {
               handleGetWorkoutDetails(workout.id);
-              setDetailsModalVisible(true);
+              setDetailsModalIsVisible(true);
             }}
           />
         )}
       </ScrollView>
-      <Modal.Wrapper
-        visible={detailsModalVisible}
-        onClose={() => setDetailsModalVisible(false)}
+
+      <BottomSheet
+        ref={workoutDetailsRef}
+        closeBackdrop={() => setDetailsModalIsVisible(false)}
+        primaryButton={{
+          title: "Start Workout",
+          onPress: () => {
+            if (detailedWorkout) {
+              navigation.navigate("WorkingOut", {
+                workoutId: detailedWorkout.workout_id,
+              });
+              setDetailsModalIsVisible(false);
+              setDetailedWorkout(null);
+              workoutDetailsRef.current?.scrollTo(0);
+            }
+          },
+        }}
       >
-        <Modal.Header
-          title={detailedWorkout?.workout_name ?? "Workout Details"}
-          onClose={() => setDetailsModalVisible(false)}
-        />
-        <Modal.Content>
-          <ScrollView style={styles.modalItemsContainer}>
-            {detailedWorkout &&
-              detailedWorkout.exercises?.map((exercise, index) => (
-                <View key={index}>
-                  <Text style={styles.title}>
-                    {exercise.exercise_name} - {exercise.sets?.length ?? "No"}{" "}
-                    Sets
-                  </Text>
-                </View>
-              ))}
-          </ScrollView>
-          <Modal.Footer
-            mainButton={{
-              text: "Start Workout",
-              onPress: () => {
-                if (detailedWorkout) {
-                  navigation.navigate("WorkingOut", {
-                    workoutId: detailedWorkout.workout_id,
-                  });
-                  setDetailsModalVisible(false);
-                }
-              },
-              variant: "primary",
-            }}
-            actionButtons={{
-              primary: {
-                icon: "delete",
-                onPress: () => null,
-                variant: "danger",
-              },
-              secondary: {
-                icon: "edit",
-                onPress: () => null,
-                variant: "secondary",
-              },
-            }}
-          />
-        </Modal.Content>
-      </Modal.Wrapper>
+        <ScrollView style={styles.modalItemsContainer}>
+          {detailedWorkout &&
+            detailedWorkout.exercises?.map((exercise, index) => (
+              <View key={index}>
+                <Text style={styles.title}>
+                  {exercise.exercise_name} - {exercise.sets?.length ?? "No"}{" "}
+                  Sets
+                </Text>
+              </View>
+            ))}
+        </ScrollView>
+      </BottomSheet>
     </PageWrapper>
   );
 }

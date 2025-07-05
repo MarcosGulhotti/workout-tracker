@@ -1,9 +1,11 @@
-import { Modal } from "@/components/Modal/Modal";
+import BottomSheet, {
+  BottomSheetRefProps,
+} from "@/components/BottomSheet/BottomSheet";
 import { DAYS_OF_WEEK } from "@/consts/days";
 import { CreateExerciseProps } from "@/database/types";
 import { useWorkoutDatabase } from "@/database/useWorkoutDatabase";
 import { useCreateWorkoutContext } from "@/hooks/useCreateWorkoutContext";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -21,6 +23,8 @@ import { StyledButton } from "../../components/StyledButton/StyledButton";
 import { NavigationPageProps } from "../../types/navigation";
 
 export function CreateWorkout({ navigation }: NavigationPageProps) {
+  const daysRef = useRef<BottomSheetRefProps>(null);
+  const exercisesRef = useRef<BottomSheetRefProps>(null);
   const [workoutName, setWorkoutName] = useState<string>("");
   const [exerciseName, setExerciseName] = useState<string>("");
 
@@ -35,7 +39,7 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
   const [numberOfSets, setNumberOfSets] = useState<string>(""); // Number of sets (user input)
   const [setsData, setSetsData] = useState<{ reps: string; weight: string }[]>(
     [],
-  ); // Track reps and weight
+  );
 
   const [savedExercises, setSavedExercises] = useState<CreateExerciseProps[]>(
     [],
@@ -98,6 +102,13 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
       navigate={navigation}
       selectedButton="CreateWorkout"
       hideNavBar
+      hasBottomSheet={showDaysModal || showExercisesModal}
+      closeBackdrop={() => {
+        setShowDaysModal(false);
+        setShowExercisesModal(false);
+        daysRef?.current?.scrollTo(0);
+        exercisesRef?.current?.scrollTo(0);
+      }}
     >
       <Separator text="New Workout" />
 
@@ -126,7 +137,14 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
                 }
                 onPress={() => {
                   Keyboard.dismiss();
-                  setShowDaysModal(true);
+                  const isActive = daysRef?.current?.isActive();
+                  if (isActive) {
+                    daysRef?.current?.scrollTo(0);
+                    setShowDaysModal(false);
+                  } else {
+                    daysRef?.current?.scrollTo(-500);
+                    setShowDaysModal(true);
+                  }
                 }}
                 variant={selectedDay.length ? "selectedInput" : "input"}
               />
@@ -197,7 +215,16 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
         {savedExercises.length > 0 && (
           <StyledButton
             text="List Exercises"
-            onPress={() => setShowExercisesModal(true)}
+            onPress={() => {
+              const isActive = exercisesRef?.current?.isActive();
+              if (isActive) {
+                exercisesRef?.current?.scrollTo(0);
+                setShowExercisesModal(false);
+              } else {
+                exercisesRef?.current?.scrollTo(-500);
+                setShowExercisesModal(true);
+              }
+            }}
             variant="secondary"
           />
         )}
@@ -225,54 +252,59 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
         )}
       </View>
 
-      <Modal.Wrapper
-        visible={showDaysModal}
-        onClose={() => setShowDaysModal(false)}
-      >
-        <Modal.Header
-          title="Day of the week"
-          onClose={() => setShowDaysModal(false)}
-          customIcon="calendar"
-        />
-        <Modal.Content>
-          <ScrollView style={styles.modalItemsContainer}>
-            {DAYS_OF_WEEK.map((day, index) => (
-              <TouchableOpacity
-                key={index}
+      <BottomSheet ref={daysRef} closeBackdrop={() => setShowDaysModal(false)}>
+        <ScrollView style={styles.modalItemsContainer}>
+          {DAYS_OF_WEEK.map((day, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.modalItem,
+                selectedDay === day ? { backgroundColor: "#00A8E8" } : {},
+              ]}
+              onPress={() => {
+                setSelectedDay(day);
+                setShowDaysModal(false);
+                daysRef?.current?.scrollTo(0);
+              }}
+            >
+              <Text
                 style={[
-                  styles.modalItem,
-                  selectedDay === day ? { backgroundColor: "#00A8E8" } : {},
+                  styles.modalItemText,
+                  selectedDay === day ? { color: "#fff" } : {},
                 ]}
-                onPress={() => {
-                  setSelectedDay(day);
-                  setShowDaysModal(false);
-                }}
               >
-                <Text
-                  style={[
-                    styles.modalItemText,
-                    selectedDay === day ? { color: "#fff" } : {},
-                  ]}
-                >
-                  {day}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Modal.Content>
-        <Modal.Footer
-          mainButton={{
-            text: "Clear",
-            onPress: () => {
-              setSelectedDay("");
-              setShowDaysModal(false);
-            },
-            variant: "danger",
-          }}
-        />
-      </Modal.Wrapper>
+                {day}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </BottomSheet>
 
-      <Modal.Wrapper
+      <BottomSheet
+        ref={exercisesRef}
+        closeBackdrop={() => setShowExercisesModal(false)}
+      >
+        <ScrollView style={styles.modalItemsContainer}>
+          {savedExercises.map((exercise, index) => (
+            <View key={index} style={styles.modalItem}>
+              <Text style={styles.modalItemText}>{exercise.exerciseName}</Text>
+
+              <View style={styles.badgeContainer}>
+                {exercise.sets.length > 0 &&
+                  exercise.sets.map((set, idx) => (
+                    <Text key={idx} style={styles.badge}>
+                      {set.repetitions
+                        ? set.repetitions + " reps "
+                        : `Set ${idx + 1} ` + "Missing data"}
+                      {set.weight ? set.weight + "kg" : ""}
+                    </Text>
+                  ))}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </BottomSheet>
+      {/* <Modal.Wrapper
         visible={showExercisesModal}
         onClose={() => setShowExercisesModal(false)}
       >
@@ -303,7 +335,7 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
             ))}
           </ScrollView>
         </Modal.Content>
-      </Modal.Wrapper>
+      </Modal.Wrapper> */}
     </PageWrapper>
   );
 }

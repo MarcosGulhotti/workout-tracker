@@ -1,6 +1,5 @@
 import { Workout } from "@/database/types";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Icon } from "react-native-elements";
 
 /**
  * Renders a list of workout cards.
@@ -19,20 +18,18 @@ export default function WorkoutCard({
   onPress: (workout: Workout) => void;
 }) {
   return workouts.map((workout, index) => (
-    <View style={styles.createdExercisesContainer} key={index}>
+    <TouchableOpacity
+      onPress={() => onPress(workout)}
+      style={styles.createdExercisesContainer}
+      key={index}
+    >
       <View>
         <Text style={styles.title}>{workout.name}</Text>
         <Text style={styles.texts}>
           {workout.exercises?.length ?? "No"} Exercises
         </Text>
       </View>
-      <TouchableOpacity
-        style={{ width: 30, backgroundColor: "transparent" }}
-        onPress={() => onPress(workout)}
-      >
-        <Icon name="more-vert" color="#BDBDBD" />
-      </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   ));
 }
 
