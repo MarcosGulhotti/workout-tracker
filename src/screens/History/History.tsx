@@ -182,35 +182,6 @@ export function History({ navigation }: NavigationPageProps) {
         </TouchableWithoutFeedback>
       </NativeModal>
 
-      {/* <Modal.Wrapper
-        visible={detailsModalVisible}
-        onClose={() => setDetailsModalVisible(false)}
-      >
-        <Modal.Header
-          title={detailedWorkout?.workout_name || "Workout Details"}
-          onClose={() => setDetailsModalVisible(false)}
-        />
-        <Modal.Content>
-          <ScrollView>
-            {detailedWorkout &&
-              detailedWorkout.completed_exercises.map((exercise, index) => (
-                <View key={index}>
-                  <Text style={{ fontWeight: "bold", fontSize: 16 }}>
-                    {exercise.name} - {exercise.completed_sets.length} Sets
-                  </Text>
-                  {exercise.completed_sets.map((set, setIndex) => (
-                    <View key={setIndex} style={{ marginLeft: 10 }}>
-                      <Text>
-                        Set {set.set_number}: {set.repetitions} reps at{" "}
-                        {set.weight} kg
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ))}
-          </ScrollView>
-        </Modal.Content>
-      </Modal.Wrapper> */}
       <BottomSheet ref={cardRef} closeBackdrop={() => setCardActive(false)}>
         <ScrollView>
           {detailedWorkout &&
@@ -285,70 +256,6 @@ export function History({ navigation }: NavigationPageProps) {
           </View>
         </ScrollView>
       </BottomSheet>
-
-      {/* <Modal.Wrapper
-        visible={showFilters}
-        onClose={() => {
-          setTimeout(() => {
-            setShowFilters(false);
-          }, 300);
-        }}
-      >
-        <Modal.Header
-          title="Filters"
-          onClose={() => {
-            setTimeout(() => {
-              setShowFilters(false);
-            }, 300);
-          }}
-        />
-        <Modal.Content>
-          <ScrollView style={{ marginTop: 20 }}>
-            <LabeledTextInput
-              label="Nome do treino:"
-              placeholder="Buscar por nome do treino..."
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-              style={{ marginHorizontal: 20 }}
-            />
-            <View style={styles.dateFilters}>
-              <View style={styles.container}>
-                <Text style={styles.dateInputLabel}>Data de início:</Text>
-                <TouchableOpacity
-                  onPress={() => setShowStartPicker(true)}
-                  style={styles.dateInput}
-                >
-                  <Text style={{ color: startDate ? "#000" : "#888" }}>
-                    {startDate
-                      ? startDate.toLocaleDateString("pt-BR")
-                      : "Selecionar data de início"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.container}>
-                <Text style={styles.dateInputLabel}>Data de fim:</Text>
-                <TouchableOpacity
-                  onPress={() => setShowEndPicker(true)}
-                  style={styles.dateInput}
-                >
-                  <Text style={{ color: endDate ? "#000" : "#888" }}>
-                    {endDate
-                      ? endDate.toLocaleDateString("pt-BR")
-                      : "Selecionar data de fim"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ScrollView>
-        </Modal.Content>
-        <Modal.Footer
-          mainButton={{
-            text: "Aplicar Filtros",
-            onPress: () => setShowFilters(false),
-            variant: "primary",
-          }}
-        />
-      </Modal.Wrapper> */}
     </PageWrapper>
   );
 }

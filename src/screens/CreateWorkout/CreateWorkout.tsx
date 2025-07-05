@@ -304,38 +304,6 @@ export function CreateWorkout({ navigation }: NavigationPageProps) {
           ))}
         </ScrollView>
       </BottomSheet>
-      {/* <Modal.Wrapper
-        visible={showExercisesModal}
-        onClose={() => setShowExercisesModal(false)}
-      >
-        <Modal.Header
-          title="Exercises"
-          onClose={() => setShowExercisesModal(false)}
-        />
-        <Modal.Content>
-          <ScrollView style={styles.modalItemsContainer}>
-            {savedExercises.map((exercise, index) => (
-              <View key={index} style={styles.modalItem}>
-                <Text style={styles.modalItemText}>
-                  {exercise.exerciseName}
-                </Text>
-
-                <View style={styles.badgeContainer}>
-                  {exercise.sets.length > 0 &&
-                    exercise.sets.map((set, idx) => (
-                      <Text key={idx} style={styles.badge}>
-                        {set.repetitions
-                          ? set.repetitions + " reps "
-                          : `Set ${idx + 1} ` + "Missing data"}
-                        {set.weight ? set.weight + "kg" : ""}
-                      </Text>
-                    ))}
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </Modal.Content>
-      </Modal.Wrapper> */}
     </PageWrapper>
   );
 }
