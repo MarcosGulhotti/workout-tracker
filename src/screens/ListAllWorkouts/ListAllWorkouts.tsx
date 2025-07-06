@@ -56,7 +56,7 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
         setDetailsModalIsVisible(false);
         setDetailedWorkout(null);
       } else {
-        workoutDetailsRef?.current?.scrollTo(-500);
+        workoutDetailsRef?.current?.scrollTo(-650);
         setDetailsModalIsVisible(true);
         setDetailedWorkout(result);
       }
@@ -101,6 +101,7 @@ export function ListAllWorkouts({ navigation, route }: NavigationPageProps) {
       <BottomSheet
         ref={workoutDetailsRef}
         closeBackdrop={() => setDetailsModalIsVisible(false)}
+        initialHeight={-650}
         primaryButton={{
           title: "Start Workout",
           onPress: () => {

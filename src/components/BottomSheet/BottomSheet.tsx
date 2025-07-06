@@ -1,4 +1,4 @@
-import React, { useCallback, useImperativeHandle } from "react";
+import React, { useCallback, useImperativeHandle, useMemo } from "react";
 import { Button, Dimensions, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -21,6 +21,7 @@ type BottomSheetProps = {
     title: string;
     onPress: () => void;
   };
+  initialHeight?: number;
 };
 
 export type BottomSheetRefProps = {
@@ -29,9 +30,12 @@ export type BottomSheetRefProps = {
 };
 
 const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
-  ({ children, closeBackdrop, primaryButton }, ref) => {
+  ({ children, closeBackdrop, primaryButton, initialHeight }, ref) => {
     const translateY = useSharedValue(0);
     const active = useSharedValue(false);
+    const context = useSharedValue({ y: 0 });
+
+    const shouldBlockScrollTop = useMemo(() => primaryButton, [primaryButton]);
 
     const scrollTo = useCallback(
       (destination: number) => {
@@ -55,7 +59,6 @@ const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
       isActive,
     ]);
 
-    const context = useSharedValue({ y: 0 });
     const gesture = Gesture.Pan()
       .onStart(() => {
         context.value = { y: translateY.value };
@@ -67,6 +70,11 @@ const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
       .onEnd(() => {
         if (translateY.value > -SCREEN_HEIGHT / 1.9) {
           scrollTo(0);
+        } else if (
+          shouldBlockScrollTop &&
+          translateY.value < -SCREEN_HEIGHT / 1.5
+        ) {
+          scrollTo(initialHeight ?? -650);
         } else if (translateY.value < -SCREEN_HEIGHT / 1.5) {
           scrollTo(MAX_TRANSLATE_Y);
         }
@@ -90,7 +98,8 @@ const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
       <GestureDetector gesture={gesture}>
         <Animated.View style={[styles.bottomSheetContainer, rBottomSheetStyle]}>
           <View style={styles.line} />
-          <View>
+          {children}
+          <View style={{ flex: 1 }}>
             {primaryButton && (
               <Button
                 title={primaryButton.title}
@@ -98,7 +107,6 @@ const BottomSheet = React.forwardRef<BottomSheetRefProps, BottomSheetProps>(
               />
             )}
           </View>
-          {children}
         </Animated.View>
       </GestureDetector>
     );
